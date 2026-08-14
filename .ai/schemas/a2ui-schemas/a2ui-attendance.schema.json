@@ -1,0 +1,264 @@
+{
+  "$schema": "https://a2ui.dev/schema/v1",
+  "meta": {
+    "scene_id": "attendance",
+    "scene_name": "签到计数",
+    "version": "1.0.0",
+    "source": "agent",
+    "harmony_version": "1.2.0",
+    "description": "教育/会议场景：基于名单的快速考勤与签到"
+  },
+  "intent": {
+    "primary": "通过触控、语音或扫码方式完成人员签到，并实时统计签到状态",
+    "actions": [
+      "import_name_list",
+      "add_person",
+      "toggle_attendance",
+      "mark_all_present",
+      "reset_attendance",
+      "voice_call_roll",
+      "scan_qr_checkin",
+      "announce_stats"
+    ]
+  },
+  "data_model": {
+    "state": {
+      "phase": "idle | importing | scanning | announcing",
+      "total_count": "number",
+      "present_count": "number",
+      "absent_count": "number",
+      "people": "Person[]",
+      "scan_qr_active": "boolean",
+      "qr_code_refresh_at": "number",
+      "agent_status": "idle | listening | processing | done",
+      "agent_message": "string"
+    },
+    "entities": {
+      "Person": {
+        "id": "string (uuid)",
+        "name": "string",
+        "status": "present | absent",
+        "checkin_method": "touch | voice | qr | batch",
+        "checkin_at": "number | null"
+      },
+      "AttendanceStats": {
+        "total": "number",
+        "present": "number",
+        "absent": "number",
+        "present_rate": "number (0-1)"
+      }
+    }
+  },
+  "ui_schema": {
+    "layout": {
+      "type": "column",
+      "sections": [
+        {
+          "id": "header_stats",
+          "type": "row",
+          "alignment": "center",
+          "spacing": "space_lg",
+          "children": ["stat_total", "stat_present", "stat_absent"]
+        },
+        {
+          "id": "action_bar",
+          "type": "row",
+          "alignment": "center",
+          "spacing": "space_sm",
+          "wrap": true,
+          "children": ["btn_import", "btn_qr", "btn_add", "btn_all_present", "btn_reset"]
+        },
+        {
+          "id": "lists",
+          "type": "row",
+          "columns": 2,
+          "spacing": "space_md",
+          "children": ["list_present", "list_absent"]
+        },
+        {
+          "id": "agent_panel",
+          "type": "card",
+          "children": ["agent_card"]
+        }
+      ]
+    },
+    "components": [
+      {
+        "id": "stat_total",
+        "type": "StatCard",
+        "data_bind": "state.total_count",
+        "label": "应到 (总人数)",
+        "icon": "👥",
+        "color_token": "text_primary",
+        "variant": "neutral"
+      },
+      {
+        "id": "stat_present",
+        "type": "StatCard",
+        "data_bind": "state.present_count",
+        "label": "已签到",
+        "icon": "✅",
+        "color_token": "success",
+        "variant": "success"
+      },
+      {
+        "id": "stat_absent",
+        "type": "StatCard",
+        "data_bind": "state.absent_count",
+        "label": "未签到",
+        "icon": "⏳",
+        "color_token": "warning",
+        "variant": "warning"
+      },
+      {
+        "id": "btn_import",
+        "type": "Button",
+        "text": "📥 导入名单",
+        "intent": "import_name_list",
+        "variant": "primary"
+      },
+      {
+        "id": "btn_qr",
+        "type": "Button",
+        "text": "📱 扫码签到",
+        "intent": "scan_qr_checkin",
+        "variant": "brand_surface"
+      },
+      {
+        "id": "btn_add",
+        "type": "Button",
+        "text": "➕ 添加人员",
+        "intent": "add_person",
+        "variant": "outline"
+      },
+      {
+        "id": "btn_all_present",
+        "type": "Button",
+        "text": "✓ 全员已到",
+        "intent": "mark_all_present",
+        "variant": "outline"
+      },
+      {
+        "id": "btn_reset",
+        "type": "Button",
+        "text": "↻ 重置",
+        "intent": "reset_attendance",
+        "variant": "ghost"
+      },
+      {
+        "id": "list_present",
+        "type": "PersonList",
+        "data_bind": "state.people[status=='present']",
+        "empty_text": "暂无签到人员",
+        "variant": "success"
+      },
+      {
+        "id": "list_absent",
+        "type": "PersonList",
+        "data_bind": "state.people[status=='absent']",
+        "empty_text": "请先导入应到人员名单",
+        "variant": "warning"
+      },
+      {
+        "id": "agent_card",
+        "type": "AgentCard",
+        "data_bind": "state.agent_status + state.agent_message",
+        "states": {
+          "idle": "🤖 就绪 · 点击人员姓名快速签到，或对 Agent 说「张三到了」",
+          "listening": "🎤 正在聆听 · 请说话...",
+          "processing": "⚙️ 正在处理签到信息...",
+          "done": "✅ 操作完成"
+        }
+      }
+    ]
+  },
+  "interaction_protocol": {
+    "states": [
+      { "name": "idle", "description": "等待用户操作" },
+      { "name": "importing", "description": "正在导入名单" },
+      { "name": "scanning", "description": "扫码签到进行中" },
+      { "name": "listening", "description": "Agent 正在聆听语音" },
+      { "name": "processing", "description": "Agent 正在处理指令" },
+      { "name": "done", "description": "操作完成反馈" }
+    ],
+    "events": [
+      {
+        "name": "onPersonTap",
+        "payload": { "personId": "string" },
+        "description": "用户点击/触控某个人物"
+      },
+      {
+        "name": "onVoiceInput",
+        "payload": { "transcript": "string" },
+        "description": "语音输入事件"
+      },
+      {
+        "name": "onQRScan",
+        "payload": { "personId": "string" },
+        "description": "扫码签到事件"
+      },
+      {
+        "name": "onImportComplete",
+        "payload": { "people": "Person[]" },
+        "description": "名单导入完成"
+      }
+    ],
+    "actions": [
+      {
+        "name": "toggleAttendance",
+        "trigger": "onPersonTap",
+        "effect": "切换对应人员 present/absent 状态，更新统计",
+        "transitions": ["idle → idle"]
+      },
+      {
+        "name": "processVoiceCommand",
+        "trigger": "onVoiceInput",
+        "effect": "解析语音指令，执行对应签到操作",
+        "transitions": ["idle → listening → processing → done → idle"]
+      },
+      {
+        "name": "processQRScan",
+        "trigger": "onQRScan",
+        "effect": "记录扫码签到，更新名单",
+        "transitions": ["scanning → idle"]
+      },
+      {
+        "name": "importNameList",
+        "trigger": "btn_import tap",
+        "effect": "打开导入面板，解析文本并创建人员列表",
+        "transitions": ["idle → importing → idle"]
+      }
+    ]
+  },
+  "design_tokens": {
+    "color": {
+      "stats_total": "text_primary",
+      "stats_present": "success",
+      "stats_absent": "warning",
+      "list_present_bg": "success_surface",
+      "list_absent_bg": "surface_muted",
+      "agent_listening": "brand",
+      "agent_processing": "warning",
+      "agent_done": "success",
+      "qr_panel_bg": "glass"
+    },
+    "typography": {
+      "stats_number": { "token": "display", "size": 30, "weight": "Bold" },
+      "stats_label": { "token": "caption", "size": 14, "weight": "Regular" },
+      "list_item_name": { "token": "body", "size": 16, "weight": "Regular" },
+      "agent_message": { "token": "body", "size": 16, "weight": "Regular" }
+    },
+    "spacing": {
+      "section_gap": "space_md",
+      "list_item_gap": "space_xs",
+      "action_gap": "space_2xs",
+      "stats_padding": "space_md"
+    },
+    "shape": {
+      "stat_card": "radius_md",
+      "list_item": "radius_md",
+      "agent_card": "radius_lg",
+      "button": "radius_full"
+    }
+  }
+}

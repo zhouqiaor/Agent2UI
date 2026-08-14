@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A2UI 交互方案决策预览 · IdeaHub</title>
+<style>
+:root {
+  --brand: #007DFF;
+  --brand-pressed: #0069D6;
+  --brand-surface: #E8F3FF;
+  --success: #2E7D32;
+  --success-surface: #E6F4EA;
+  --warning: #F5A623;
+  --warning-surface: #FFF3D6;
+  --danger: #FF3B30;
+  --text-1: #181818;
+  --text-2: #666666;
+  --text-3: #999999;
+  --text-inv: #FFFFFF;
+  --surface: #FFFFFF;
+  --surface-muted: #F5F6F7;
+  --divider: #E8EAED;
+  --bg: #F5F6F7;
+  --shadow-card: 0 2px 8px rgba(0,0,0,0.12);
+  --shadow-elev: 0 6px 16px rgba(0,0,0,0.16);
+  --glass: rgba(255,255,255,0.72);
+  --glass-border: rgba(255,255,255,0.55);
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-full: 999px;
+  --font: "HarmonyOS Sans","PingFang SC","Microsoft YaHei",system-ui,-apple-system,sans-serif;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: var(--font);
+  color: var(--text-1);
+  background: var(--bg);
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.5;
+}
+
+/* ============ 决策导航 ============ */
+.decision-nav {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: var(--glass);
+  backdrop-filter: blur(14px) saturate(160%);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--r-lg);
+  padding: 12px;
+  box-shadow: var(--shadow-elev);
+  z-index: 1000;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.decision-nav .label {
+  font-size: 12px;
+  color: var(--text-3);
+  padding: 0 8px;
+  border-right: 1px solid var(--divider);
+  margin-right: 4px;
+}
+.option-btn {
+  padding: 8px 16px;
+  border: 1px solid var(--divider);
+  background: transparent;
+  color: var(--text-2);
+  border-radius: var(--r-full);
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.15s;
+  font-family: var(--font);
+}
+.option-btn:hover { border-color: var(--brand); color: var(--text-1); }
+.option-btn.active { background: var(--brand); color: #fff; border-color: var(--brand); }
+
+/* ============ 屏幕容器 ============ */
+.screen {
+  width: 100%;
+  min-height: 100vh;
+  display: none;
+  flex-direction: column;
+  padding: 24px;
+  gap: 16px;
+}
+.screen.active { display: flex; animation: fadeIn 0.3s cubic-bezier(0.4,0,0.2,1); }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ============ 场景标题 ============ */
+.scene-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-card);
+}
+.scene-title {
+  font-size: 22px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.scene-badge {
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: var(--r-full);
+  background: var(--brand-surface);
+  color: var(--brand);
+}
+.scene-meta {
+  font-size: 14px;
+  color: var(--text-3);
+}
+
+/* ============================================
+   方案 A: 经典对话流 (Dock & Stream)
+   ============================================ */
+.option-a .main-workspace {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 16px;
+  min-height: 0;
+}
+.option-a .content-area {
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.option-a .workspace-header {
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--divider);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.option-a .workspace-title {
+  font-size: 18px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.option-a .workspace-body {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+  background: var(--surface-muted);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+/* AI 历史流 */
+.option-a .chat-stream {
+  width: 100%;
+  max-width: 360px;
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.option-a .stream-header {
+  padding: 16px;
+  border-bottom: 1px solid var(--divider);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+}
+.option-a .stream-body {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.option-a .stream-bubble {
+  padding: 12px 16px;
+  border-radius: var(--r-md);
+  font-size: 14px;
+  line-height: 1.5;
+  max-width: 90%;
+}
+.option-a .stream-bubble.ai {
+  background: var(--brand-surface);
+  color: var(--text-1);
+  align-self: flex-start;
+  border-bottom-left-radius: 4px;
+}
+.option-a .stream-bubble.user {
+  background: var(--surface-muted);
+  align-self: flex-end;
+  border-bottom-right-radius: 4px;
+}
+/* 底部输入 Dock */
+.option-a .dock-bar {
+  padding: 16px 24px;
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-card);
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.option-a .dock-input {
+  flex: 1;
+  padding: 16px 20px;
+  background: var(--surface-muted);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-lg);
+  color: var(--text-1);
+  font-size: 16px;
+  font-family: var(--font);
+  outline: none;
+  resize: none;
+  min-height: 56px;
+  max-height: 120px;
+}
+.option-a .dock-input:focus { border-color: var(--brand); background: var(--surface); }
+.option-a .dock-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.option-a .dock-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--r-full);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  transition: all 0.15s;
+}
+.option-a .dock-btn.primary { background: var(--brand); color: #fff; }
+.option-a .dock-btn.primary:hover { background: var(--brand-pressed); }
+.option-a .dock-btn.voice { background: var(--brand-surface); color: var(--brand); }
+.option-a .dock-btn.voice.active { 
+  background: var(--danger); 
+  color: #fff;
+  animation: pulse-ring 1.5s cubic-bezier(0.4,0,0.2,1) infinite;
+}
+@keyframes pulse-ring { 0% { transform: scale(0.95); } 50% { transform: scale(1.05); } 100% { transform: scale(0.95); } }
+
+/* ========= 模拟内容（白板/PPT） ========= */
+.option-a .mock-content {
+  background: var(--surface);
+  border-radius: var(--r-md);
+  border: 2px dashed var(--divider);
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  min-height: 200px;
+}
+.option-a .mock-shape {
+  width: 120px;
+  height: 100px;
+  border: 2px solid var(--text-2);
+  position: relative;
+}
+.option-a .mock-shape.triangle {
+  width: 0;
+  height: 0;
+  border-left: 60px solid transparent;
+  border-right: 60px solid transparent;
+  border-bottom: 100px solid var(--text-2);
+  background: transparent;
+}
+.option-a .mock-text {
+  font-size: 16px;
+  color: var(--text-2);
+  text-align: center;
+  max-width: 300px;
+}
+
+/* ============================================
+   方案 B: 气泡与钉板 (Bubble & Pin)
+   ============================================ */
+.option-b .workspace-area {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 80px;
+  gap: 16px;
+  min-height: 0;
+}
+.option-b .canvas-area {
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-card);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.option-b .canvas-body {
+  flex: 1;
+  padding: 32px;
+  position: relative;
+  background: 
+    radial-gradient(circle at 1px 1px, var(--divider) 1px, transparent 0);
+  background-size: 24px 24px;
+}
+/* 画布元素 */
+.option-b .canvas-element {
+  position: absolute;
+  padding: 16px 24px;
+  background: var(--brand-surface);
+  border: 2px solid var(--brand);
+  border-radius: var(--r-md);
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.15s;
+}
+.option-b .canvas-element:hover { transform: scale(1.02); box-shadow: var(--shadow-elev); }
+.option-b .canvas-element.selected {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 4px rgba(255,59,48,0.2);
+}
+/* 上下文气泡 */
+.option-b .context-bubble {
+  position: absolute;
+  background: var(--surface);
+  border: 1px solid var(--brand);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-elev);
+  padding: 12px;
+  width: 240px;
+  z-index: 10;
+  animation: fadeIn 0.2s ease-out;
+}
+.option-b .context-bubble::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 32px;
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-bottom: 8px solid var(--brand);
+}
+.option-b .bubble-title {
+  font-size: 12px;
+  color: var(--brand);
+  font-weight: 500;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.option-b .bubble-input {
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--surface-muted);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-md);
+  color: var(--text-1);
+  font-size: 14px;
+  font-family: var(--font);
+  outline: none;
+  margin-bottom: 8px;
+}
+.option-b .bubble-actions {
+  display: flex;
+  gap: 8px;
+}
+/* 右侧钉板 */
+.option-b .pinboard {
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-card);
+  padding: 12px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+.option-b .pinboard-title {
+  font-size: 12px;
+  color: var(--text-3);
+  writing-mode: vertical-rl;
+  letter-spacing: 4px;
+  margin: 8px 0;
+}
+.option-b .pin {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--r-md);
+  background: var(--brand-surface);
+  border: 1px solid var(--brand);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-size: 10px;
+  color: var(--brand);
+  text-align: center;
+  line-height: 1.2;
+}
+.option-b .pin:hover { transform: scale(1.05); box-shadow: var(--shadow-elev); }
+.option-b .pin .pin-icon { font-size: 20px; margin-bottom: 2px; }
+.option-b .pin .pin-count {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: var(--danger);
+  color: #fff;
+  font-size: 10px;
+  width: 18px;
+  height: 18px;
+  border-radius: var(--r-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+/* 底部悬浮输入 */
+.option-b .floating-input {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-elev);
+  display: flex;
+  align-items: center;
+  padding: 8px 8px 8px 20px;
+  gap: 8px;
+  z-index: 100;
+}
+.option-b .floating-input input {
+  border: none;
+  outline: none;
+  font-size: 14px;
+  font-family: var(--font);
+  width: 280px;
+  padding: 8px 0;
+  background: transparent;
+}
+.option-b .floating-input .floating-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--r-full);
+  border: none;
+  background: var(--brand);
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+}
+
+/* ============================================
+   方案 C: 命令面板与时间轴 (Command Palette)
+   ============================================ */
+.option-c .main-layout {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 16px;
+  min-height: 0;
+}
+/* 左侧时间轴 */
+.option-c .timeline-panel {
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.option-c .timeline-header {
+  padding: 16px;
+  border-bottom: 1px solid var(--divider);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.option-c .timeline-title {
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.option-c .timeline-list {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+}
+.option-c .timeline-item {
+  position: relative;
+  padding: 12px 12px 12px 24px;
+  margin-bottom: 16px;
+  cursor: pointer;
+  transition: all 0.15s;
+  border-radius: var(--r-md);
+}
+.option-c .timeline-item:hover { background: var(--surface-muted); }
+.option-c .timeline-item::before {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: 16px;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--r-full);
+  background: var(--brand);
+  box-shadow: 0 0 0 4px var(--brand-surface);
+}
+.option-c .timeline-item::after {
+  content: '';
+  position: absolute;
+  left: 9px;
+  top: 28px;
+  bottom: -16px;
+  width: 2px;
+  background: var(--divider);
+}
+.option-c .timeline-item:last-child::after { display: none; }
+.option-c .timeline-time {
+  font-size: 12px;
+  color: var(--text-3);
+  margin-bottom: 4px;
+}
+.option-c .timeline-content {
+  font-size: 13px;
+  color: var(--text-1);
+  line-height: 1.4;
+}
+.option-c .timeline-content .tag {
+  display: inline-block;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: var(--r-full);
+  margin-right: 4px;
+}
+.option-c .tag.ai { background: var(--brand-surface); color: var(--brand); }
+.option-c .tag.user { background: var(--surface-muted); color: var(--text-2); }
+.option-c .tag.system { background: var(--warning-surface); color: var(--warning); }
+
+/* 右侧工作区 */
+.option-c .workspace-c {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.option-c .canvas-c {
+  flex: 1;
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-card);
+  padding: 32px;
+  position: relative;
+  overflow: hidden;
+}
+/* 命令面板 */
+.option-c .command-bar {
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-card);
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 2px solid var(--brand);
+}
+.option-c .command-input {
+  flex: 1;
+  padding: 12px 16px;
+  border: none;
+  outline: none;
+  font-size: 16px;
+  font-family: var(--font);
+  background: var(--surface-muted);
+  border-radius: var(--r-md);
+}
+.option-c .command-suggestions {
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+  flex-wrap: wrap;
+}
+.option-c .suggestion-chip {
+  padding: 6px 12px;
+  background: var(--brand-surface);
+  color: var(--brand);
+  border-radius: var(--r-full);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+  border: none;
+  font-family: var(--font);
+}
+.option-c .suggestion-chip:hover { background: var(--brand); color: #fff; }
+.option-c .command-btn {
+  padding: 8px 20px;
+  border-radius: var(--r-md);
+  border: none;
+  background: var(--brand);
+  color: #fff;
+  cursor: pointer;
+  font-size: 14px;
+  font-family: var(--font);
+  transition: all 0.15s;
+}
+.option-c .command-btn:hover { background: var(--brand-pressed); }
+.option-c .command-btn.voice { background: var(--brand-surface); color: var(--brand); }
+.option-c .command-btn.voice.active { background: var(--danger); color: #fff; }
+
+/* 方案 C 专属：结果展示卡片 */
+.option-c .result-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+.option-c .result-card {
+  padding: 16px;
+  background: var(--surface-muted);
+  border-radius: var(--r-md);
+  border-left: 3px solid var(--brand);
+}
+.option-c .result-card .rc-title {
+  font-size: 12px;
+  color: var(--text-3);
+  margin-bottom: 8px;
+}
+.option-c .result-card .rc-value {
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--text-1);
+}
+.option-c .result-card .rc-detail {
+  font-size: 12px;
+  color: var(--text-2);
+  margin-top: 4px;
+}
+
+/* ============================================
+   通用组件
+   ============================================ */
+.btn {
+  border: none;
+  cursor: pointer;
+  font-family: var(--font);
+  border-radius: var(--r-full);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 14px;
+  transition: all 0.15s;
+  padding: 12px 24px;
+}
+.btn-sm { padding: 8px 16px; font-size: 14px; border-radius: var(--r-md); }
+.btn-primary { background: var(--brand); color: #fff; }
+.btn-primary:hover { background: var(--brand-pressed); }
+.btn-outline { background: transparent; color: var(--brand); border: 1px solid var(--brand); }
+.btn-outline:hover { background: var(--brand-surface); }
+.btn-ghost { background: var(--surface-muted); color: var(--text-1); }
+.btn-ghost:hover { background: var(--divider); }
+
+/* AI 波形动画 */
+.wave-dots {
+  display: inline-flex;
+  gap: 3px;
+  align-items: center;
+}
+.wave-dots span {
+  width: 4px;
+  height: 16px;
+  background: currentColor;
+  border-radius: 2px;
+  animation: wave 0.8s ease-in-out infinite;
+}
+.wave-dots span:nth-child(1) { animation-delay: 0s; }
+.wave-dots span:nth-child(2) { animation-delay: 0.1s; }
+.wave-dots span:nth-child(3) { animation-delay: 0.2s; }
+.wave-dots span:nth-child(4) { animation-delay: 0.3s; }
+@keyframes wave {
+  0%, 100% { transform: scaleY(0.3); }
+  50% { transform: scaleY(1); }
+}
+
+/* ============ 方案说明卡片 ============ */
+.option-desc {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  background: var(--glass);
+  backdrop-filter: blur(14px) saturate(160%);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--r-lg);
+  padding: 16px 20px;
+  box-shadow: var(--shadow-elev);
+  z-index: 1000;
+  max-width: 360px;
+}
+.option-desc .od-title {
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.option-desc .od-body {
+  font-size: 13px;
+  color: var(--text-2);
+  line-height: 1.5;
+}
+.option-desc .od-tags {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+.option-desc .od-tags span {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: var(--r-full);
+  background: var(--brand-surface);
+  color: var(--brand);
+}
+
+/* ============ 响应式 ============ */
+@media (max-width: 1080px) {
+  .option-a .main-workspace { grid-template-columns: 1fr; }
+  .option-a .chat-stream { max-width: 100%; }
+  .option-b .workspace-area { grid-template-columns: 1fr; }
+  .option-b .pinboard { flex-direction: row; overflow-x: auto; }
+  .option-b .pinboard-title { writing-mode: horizontal-tb; }
+  .option-c .main-layout { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- 决策导航 -->
+<div class="decision-nav">
+  <span class="label">方案对比</span>
+  <button class="option-btn active" onclick="showOption('a')">A. 经典对话流</button>
+  <button class="option-btn" onclick="showOption('b')">B. 气泡与钉板</button>
+  <button class="option-btn" onclick="showOption('c')">C. 命令面板</button>
+</div>
+
+<!-- ============================================= -->
+<!-- 方案 A: 经典对话流 -->
+<!-- ============================================= -->
+<div class="screen option-a active" id="screen-a">
+  <div class="scene-header">
+    <div class="scene-title">
+      🏫 课堂互动
+      <span class="scene-badge">方案 A · 经典对话流</span>
+    </div>
+    <div class="scene-meta">示例：张老师正在讲解三角形</div>
+  </div>
+
+  <div class="main-workspace">
+    <!-- 主内容区（白板/PPT） -->
+    <div class="content-area">
+      <div class="workspace-header">
+        <div class="workspace-title">📐 白板 · 三角形讲解</div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-ghost btn-sm">🎨 画笔</button>
+          <button class="btn btn-ghost btn-sm">📤 分享</button>
+        </div>
+      </div>
+      <div class="workspace-body">
+        <div class="mock-content">
+          <div class="mock-shape triangle"></div>
+          <div class="mock-text">
+            这是一个不规则的三角形 ABC，<br>
+            其中 AB = 5cm, BC = 7cm, ∠B = 60°
+          </div>
+          <div style="display:flex;gap:12px;margin-top:8px;">
+            <button class="btn btn-outline btn-sm">➕ 添加辅助线</button>
+            <button class="btn btn-outline btn-sm">📏 测量角度</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI 历史流 -->
+    <div class="chat-stream">
+      <div class="stream-header">
+        <span>🤖</span>
+        <span>AI 助教</span>
+        <span style="margin-left:auto;font-size:12px;color:var(--text-3);">在线</span>
+      </div>
+      <div class="stream-body" id="stream-a">
+        <div class="stream-bubble ai">
+          您好张老师！我是 AI 助教。<br>
+          已识别当前白板上的图形为三角形。<br>
+          <span style="color:var(--brand);cursor:pointer;">点击查看识别详情 →</span>
+        </div>
+        <div class="stream-bubble user">
+          帮我计算 AC 的长度
+        </div>
+        <div class="stream-bubble ai">
+          使用余弦定理：<br>
+          AC² = AB² + BC² - 2·AB·BC·cos(B)<br>
+          AC² = 25 + 49 - 70·cos(60°)<br>
+          <strong style="font-size:16px;">AC ≈ 6.24 cm</strong><br>
+          <span style="color:var(--brand);font-size:12px;cursor:pointer;">📌 贴到白板</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 底部 Dock 输入栏 -->
+  <div class="dock-bar">
+    <textarea class="dock-input" placeholder="输入指令，或点击麦克风说话... (支持 @ 选中内容)" readonly></textarea>
+    <div class="dock-actions">
+      <button class="dock-btn voice" title="语音输入" onclick="toggleVoiceA(this)">🎤</button>
+      <button class="dock-btn primary" title="发送">➤</button>
+    </div>
+  </div>
+
+  <!-- 方案说明 -->
+  <div class="option-desc">
+    <div class="od-title">🏆 方案 A · 经典对话流</div>
+    <div class="od-body">
+      <strong>优势</strong>：用户学习成本最低，类似聊天软件。AI 助手作为“第三方”独立存在，适合长对话和多轮追问。<br><br>
+      <strong>劣势</strong>：AI 面板占据空间，可能分散注意力。AI 与内容存在“距离感”。
+    </div>
+    <div class="od-tags">
+      <span>低学习成本</span>
+      <span>适合问答</span>
+      <span>支持长对话</span>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================= -->
+<!-- 方案 B: 气泡与钉板 -->
+<!-- ============================================= -->
+<div class="screen option-b" id="screen-b">
+  <div class="scene-header">
+    <div class="scene-title">
+      🏫 课堂互动
+      <span class="scene-badge">方案 B · 气泡与钉板</span>
+    </div>
+    <div class="scene-meta">示例：在白板上圈选元素唤起 AI</div>
+  </div>
+
+  <div class="workspace-area">
+    <!-- 画布工作区 -->
+    <div class="canvas-area">
+      <div class="canvas-body" id="canvas-b">
+        <!-- 画布元素 -->
+        <div class="canvas-element" style="top:40px;left:80px;" onclick="selectElement(this)">
+          📐 三角形 ABC
+        </div>
+        <div class="canvas-element" style="top:160px;left:200px;background:var(--success-surface);border-color:var(--success);color:var(--success);" onclick="selectElement(this)">
+          ✏️ 手写公式 (未识别)
+        </div>
+        <div class="canvas-element" style="top:100px;left:440px;background:var(--warning-surface);border-color:var(--warning);color:var(--warning);" onclick="selectElement(this)">
+          ❓ 待解问题
+        </div>
+        <div class="canvas-element" style="top:260px;left:120px;" onclick="selectElement(this)">
+          📊 统计图表
+        </div>
+
+        <!-- 上下文气泡（默认隐藏，点击元素后显示） -->
+        <div class="context-bubble" id="bubble-context" style="display:none;top:120px;left:200px;">
+          <div class="bubble-title">🤖 针对选中元素</div>
+          <input class="bubble-input" placeholder="问点什么... 如：识别这个图形" />
+          <div class="bubble-actions">
+            <button class="btn btn-primary btn-sm">✨ 分析</button>
+            <button class="btn btn-ghost btn-sm">🔊 语音</button>
+          </div>
+        </div>
+
+        <!-- AI 回复气泡 -->
+        <div class="context-bubble" style="display:block;top:310px;left:120px;border-color:var(--success);">
+          <div class="bubble-title" style="color:var(--success);">✅ AI 分析完成</div>
+          <div style="font-size:13px;line-height:1.5;">
+            识别为<strong>直角三角形</strong>，<br>
+            建议自动生成辅助线。
+          </div>
+          <div class="bubble-actions" style="margin-top:8px;">
+            <button class="btn btn-outline btn-sm">📌 钉到侧边</button>
+            <button class="btn btn-ghost btn-sm">关闭</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 底部悬浮输入 -->
+      <div class="floating-input">
+        <input placeholder="点击画布元素后可精准询问..." readonly />
+        <button class="floating-btn">🎤</button>
+      </div>
+    </div>
+
+    <!-- 右侧钉板 -->
+    <div class="pinboard">
+      <div class="pinboard-title">知识钉板</div>
+      <div class="pin" title="三角形分析">
+        <span class="pin-icon">📐</span>
+        <span>三角形</span>
+        <span style="position:absolute;top:-4px;right:-4px;background:var(--danger);color:#fff;font-size:10px;width:18px;height:18px;border-radius:var(--r-full);display:flex;align-items:center;justify-content:center;">3</span>
+      </div>
+      <div class="pin" title="公式识别">
+        <span class="pin-icon">✏️</span>
+        <span>公式</span>
+      </div>
+      <div class="pin" title="统计图表">
+        <span class="pin-icon">📊</span>
+        <span>图表</span>
+      </div>
+      <div class="pin" title="课堂笔记">
+        <span class="pin-icon">📝</span>
+        <span>笔记</span>
+      </div>
+      <div class="pin" title="拓展资料">
+        <span class="pin-icon">🔗</span>
+        <span>链接</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 方案说明 -->
+  <div class="option-desc">
+    <div class="od-title">🌟 方案 B · 气泡与钉板</div>
+    <div class="od-body">
+      <strong>优势</strong>：AI 无感化，完全融入内容。选区内浮气泡，实现“指哪打哪”。钉板持久化 AI 产出物。<br><br>
+      <strong>劣势</strong>：交互较新颖，需引导学习。气泡过多可能遮挡内容。
+    </div>
+    <div class="od-tags">
+      <span>无感化</span>
+      <span>精准交互</span>
+      <span>钉板沉淀</span>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================= -->
+<!-- 方案 C: 命令面板与时间轴 -->
+<!-- ============================================= -->
+<div class="screen option-c" id="screen-c">
+  <div class="scene-header">
+    <div class="scene-title">
+      🏢 会议室讨论
+      <span class="scene-badge">方案 C · 命令面板 & 时间轴</span>
+    </div>
+    <div class="scene-meta">示例：Q3 预算方案评审会</div>
+  </div>
+
+  <div class="main-layout">
+    <!-- 左侧时间轴 -->
+    <div class="timeline-panel">
+      <div class="timeline-header">
+        <div class="timeline-title">📋 交互时间轴</div>
+        <span style="font-size:12px;color:var(--text-3);">实时</span>
+      </div>
+      <div class="timeline-list">
+        <div class="timeline-item">
+          <div class="timeline-time">14:30</div>
+          <div class="timeline-content"><span class="tag system">系统</span>会议开始，已连接 5 人</div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-time">14:32</div>
+          <div class="timeline-content"><span class="tag user">张总</span>请打开 Q3 预算方案</div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-time">14:33</div>
+          <div class="timeline-content"><span class="tag ai">AI</span>已检索文件「Q3_Budget_v2.pdf」，共 12 页</div>
+        </div>
+        <div class="timeline-item" style="background:var(--brand-surface);border-radius:var(--r-md);">
+          <div class="timeline-time">14:35</div>
+          <div class="timeline-content"><span class="tag ai">AI</span>自动生成<strong>会议摘要</strong>：<br>
+            • 重点讨论：研发投入占比<br>
+            • 待决策项：市场预算分配<br>
+            • 风险点：供应链成本上涨</div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-time">14:38</div>
+          <div class="timeline-content"><span class="tag user">李经理</span>研发投入部分再详细说说</div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-time">14:39</div>
+          <div class="timeline-content"><span class="tag ai">AI</span>已定位到 PPT 第 7 页，正在解析...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 右侧工作区 -->
+    <div class="workspace-c">
+      <!-- 画布 -->
+      <div class="canvas-c">
+        <div style="font-size:18px;font-weight:500;margin-bottom:16px;">📄 Q3 预算方案 · 研发投入分析</div>
+        <div style="background:var(--surface-muted);border-radius:var(--r-md);padding:24px;font-size:14px;line-height:1.8;color:var(--text-2);">
+          <strong style="color:var(--text-1);">核心数据：</strong><br>
+          研发投入总额：<strong style="font-size:32px;color:var(--brand);">¥ 2,800 万</strong><br>
+          占比：<strong style="color:var(--success);">35%</strong> · 同比增长 <strong style="color:var(--success);">12%</strong><br><br>
+          <strong style="color:var(--text-1);">分项明细：</strong><br>
+          • 人力成本：¥ 1,800 万 (64%)<br>
+          • 设备采购：¥ 600 万 (21%)<br>
+          • 外部合作：¥ 400 万 (15%)<br>
+        </div>
+
+        <!-- AI 结果卡片 -->
+        <div class="result-cards">
+          <div class="result-card">
+            <div class="rc-title">📈 同比变化</div>
+            <div class="rc-value" style="color:var(--success);">+12%</div>
+            <div class="rc-detail">研发投入逐年递增</div>
+          </div>
+          <div class="result-card">
+            <div class="rc-title">🏢 行业对比</div>
+            <div class="rc-value">35% <span style="font-size:14px;color:var(--text-3);">vs 28%</span></div>
+            <div class="rc-detail">高于行业均值 7pp</div>
+          </div>
+          <div class="result-card">
+            <div class="rc-title">⚠️ 风险提示</div>
+            <div class="rc-value" style="color:var(--warning);">中等</div>
+            <div class="rc-detail">人力成本占比较高</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 命令面板 -->
+      <div class="command-bar">
+        <input class="command-input" placeholder="输入命令或自然语言... 例如：@预算 分析研发投入占比" readonly />
+        <button class="command-btn voice" onclick="toggleVoiceC(this)">🎤 语音</button>
+        <button class="command-btn">➤ 执行</button>
+      </div>
+      <div class="command-suggestions">
+        <span style="font-size:12px;color:var(--text-3);align-self:center;">💡 快捷指令：</span>
+        <button class="suggestion-chip">@文件 总结</button>
+        <button class="suggestion-chip">@PPT 下一页</button>
+        <button class="suggestion-chip">🔍 搜索关键词</button>
+        <button class="suggestion-chip">📊 生成图表</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 方案说明 -->
+  <div class="option-desc">
+    <div class="od-title">⚡ 方案 C · 命令面板 & 时间轴</div>
+    <div class="od-body">
+      <strong>优势</strong>：效率极高，支持复杂指令（@上下文 + 动作）。左侧时间轴提供完整回溯，适合正式会议。<br><br>
+      <strong>劣势</strong>：学习曲线较陡，命令格式需要记忆。更适合专业/企业场景。
+    </div>
+    <div class="od-tags">
+      <span>高效率</span>
+      <span>可追溯</span>
+      <span>复杂指令</span>
+    </div>
+  </div>
+</div>
+
+<script>
+function showOption(variant) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.option-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('screen-' + variant).classList.add('active');
+  event.target.classList.add('active');
+}
+
+function toggleVoiceA(btn) {
+  btn.classList.toggle('active');
+  if (btn.classList.contains('active')) {
+    btn.innerHTML = '<span class="wave-dots"><span></span><span></span><span></span><span></span></span>';
+  } else {
+    btn.innerHTML = '🎤';
+  }
+}
+
+function toggleVoiceC(btn) {
+  btn.classList.toggle('active');
+  btn.textContent = btn.classList.contains('active') ? '🔴 聆听中...' : '🎤 语音';
+}
+
+function selectElement(el) {
+  document.querySelectorAll('.canvas-element').forEach(e => e.classList.remove('selected'));
+  el.classList.add('selected');
+  const bubble = document.getElementById('bubble-context');
+  bubble.style.display = 'block';
+  const rect = el.getBoundingClientRect();
+  const parentRect = el.parentElement.getBoundingClientRect();
+  bubble.style.left = (rect.left - parentRect.left) + 'px';
+  bubble.style.top = (rect.bottom - parentRect.top + 12) + 'px';
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,209 @@
+{
+  "$schema": "https://a2ui.dev/schema/v1",
+  "meta": {
+    "scene_id": "whiteboard",
+    "scene_name": "IdeaHub 白板 · A2UI 增强",
+    "version": "1.0.0",
+    "source": "agent",
+    "harmony_version": "1.2.0",
+    "description": "白板场景：Agent 智能图形识别、自动美化、语音转文字"
+  },
+  "intent": {
+    "primary": "在白板上识别手写图形/文字，Agent 提供智能识别结果和美化建议",
+    "actions": [
+      "recognize_shape",
+      "beautify_shape",
+      "voice_to_text",
+      "search_content",
+      "export_whiteboard"
+    ]
+  },
+  "data_model": {
+    "state": {
+      "shapes": "Shape[]",
+      "selected_shape": "Shape | null",
+      "a2ui_panel_visible": "boolean",
+      "agent_status": "idle | listening | processing | done",
+      "recognition_result": "RecognitionResult | null",
+      "beautify_options": "BeautifyOption[]"
+    },
+    "entities": {
+      "Shape": {
+        "id": "string",
+        "type": "freehand | line | circle | triangle | rectangle | text",
+        "raw_points": "Point[]",
+        "recognized_as": "string | null",
+        "beautified": "boolean",
+        "color": "string",
+        "stroke_width": "number"
+      },
+      "Point": { "x": "number", "y": "number" },
+      "RecognitionResult": {
+        "confidence": "number (0-1)",
+        "shape_type": "string",
+        "suggestions": "BeautifyOption[]"
+      },
+      "BeautifyOption": {
+        "id": "string",
+        "label": "string",
+        "icon": "string",
+        "transform": "object"
+      }
+    }
+  },
+  "ui_schema": {
+    "layout": {
+      "type": "column",
+      "spacing": "space_md",
+      "sections": [
+        {
+          "id": "canvas_container",
+          "type": "card",
+          "children": ["canvas", "a2ui_floating_panel"]
+        },
+        {
+          "id": "toolbar",
+          "type": "row",
+          "alignment": "center",
+          "spacing": "space_xs",
+          "children": ["tool_pen", "tool_eraser", "tool_ruler", "tool_a2ui", "tool_voice", "tool_export"]
+        },
+        {
+          "id": "agent_panel",
+          "type": "card",
+          "children": ["agent_card"]
+        }
+      ]
+    },
+    "components": [
+      {
+        "id": "canvas",
+        "type": "WhiteboardCanvas",
+        "data_bind": "state.shapes",
+        "interaction": "draw | select | erase",
+        "on_shape_complete": "recognize_shape"
+      },
+      {
+        "id": "a2ui_floating_panel",
+        "type": "FloatingPanel",
+        "data_bind": "state.selected_shape + state.recognition_result",
+        "visible_bind": "state.a2ui_panel_visible",
+        "position": "right",
+        "auto_show_on_recognition": true
+      },
+      {
+        "id": "tool_pen",
+        "type": "ToolButton",
+        "icon": "🖊",
+        "label": "书写",
+        "active_when": "draw_mode"
+      },
+      {
+        "id": "tool_eraser",
+        "type": "ToolButton",
+        "icon": "✏️",
+        "label": "橡皮"
+      },
+      {
+        "id": "tool_ruler",
+        "type": "ToolButton",
+        "icon": "📏",
+        "label": "直尺"
+      },
+      {
+        "id": "tool_a2ui",
+        "type": "ToolButton",
+        "icon": "🤖",
+        "label": "A2UI",
+        "primary": true,
+        "on_click": "recognize_shape"
+      },
+      {
+        "id": "tool_voice",
+        "type": "ToolButton",
+        "icon": "💬",
+        "label": "语音转文字",
+        "on_click": "voice_to_text"
+      },
+      {
+        "id": "tool_export",
+        "type": "ToolButton",
+        "icon": "📤",
+        "label": "导出",
+        "on_click": "export_whiteboard"
+      },
+      {
+        "id": "agent_card",
+        "type": "AgentCard",
+        "data_bind": "state.agent_status + state.recognition_result",
+        "states": {
+          "idle": "🤖 就绪 · 点击 🤖 A2UI 体验智能识别与美化",
+          "listening": "🎤 正在聆听语音...",
+          "processing": "🔍 正在识别图形...",
+          "done": "✅ 识别完成"
+        }
+      }
+    ]
+  },
+  "interaction_protocol": {
+    "states": [
+      { "name": "drawing", "description": "自由绘制模式" },
+      { "name": "selecting", "description": "选择/操作已有图形" },
+      { "name": "recognizing", "description": "Agent 正在识别图形" },
+      { "name": "beautifying", "description": "Agent 正在美化图形" }
+    ],
+    "events": [
+      { "name": "onShapeComplete", "payload": { "shapeId": "string" } },
+      { "name": "onShapeSelect", "payload": { "shapeId": "string" } },
+      { "name": "onBeautifyOptionSelect", "payload": { "optionId": "string" } },
+      { "name": "onVoiceInput", "payload": { "transcript": "string" } }
+    ],
+    "actions": [
+      {
+        "name": "recognizeShape",
+        "trigger": "onShapeComplete",
+        "effect": "分析图形点集，识别形状类型，返回置信度和美化建议",
+        "transitions": ["drawing → recognizing → selecting"]
+      },
+      {
+        "name": "applyBeautify",
+        "trigger": "onBeautifyOptionSelect",
+        "effect": "应用选中的美化方案，替换原始图形",
+        "transitions": ["selecting → beautifying → selecting"]
+      },
+      {
+        "name": "voiceToText",
+        "trigger": "onVoiceInput",
+        "effect": "将语音转为文字标注到当前画布位置",
+        "transitions": ["selecting → recognizing → selecting"]
+      }
+    ]
+  },
+  "design_tokens": {
+    "color": {
+      "canvas_bg": "surface",
+      "canvas_border": "divider",
+      "tool_active": "brand",
+      "tool_inactive": "text_secondary",
+      "recognition_result_bg": "brand_surface",
+      "confidence_high": "success",
+      "confidence_medium": "warning",
+      "confidence_low": "danger"
+    },
+    "typography": {
+      "tool_label": { "token": "caption", "size": 14, "weight": "Regular" },
+      "recognition_type": { "token": "body", "size": 16, "weight": "Medium" },
+      "confidence": { "token": "caption", "size": 14, "weight": "Regular" }
+    },
+    "spacing": {
+      "canvas_padding": "space_lg",
+      "tool_gap": "space_xs",
+      "panel_padding": "space_md"
+    },
+    "shape": {
+      "canvas": "radius_md",
+      "tool": "radius_full",
+      "a2ui_panel": "radius_md"
+    }
+  }
+}

@@ -1,0 +1,167 @@
+{
+  "$schema": "https://a2ui.dev/schema/v1",
+  "meta": {
+    "scene_id": "vote",
+    "scene_name": "投票表决",
+    "version": "1.0.0",
+    "source": "agent",
+    "harmony_version": "1.2.0",
+    "description": "会议场景：快速会议表决，支持赞成/反对/弃权"
+  },
+  "intent": {
+    "primary": "支持会议参与者快速进行议题表决，实时统计并宣布结果",
+    "actions": [
+      "cast_vote",
+      "close_vote",
+      "announce_result",
+      "reset_vote"
+    ]
+  },
+  "data_model": {
+    "state": {
+      "topic": "string",
+      "options": "VoteOption[]",
+      "total_votes": "number",
+      "quorum": "number",
+      "result_passed": "boolean | null",
+      "agent_status": "idle | listening | processing | done",
+      "agent_message": "string"
+    },
+    "entities": {
+      "VoteOption": {
+        "id": "approve | reject | abstain",
+        "label": "string",
+        "icon": "string",
+        "count": "number",
+        "percentage": "number (0-1)",
+        "color_token": "success | danger | neutral"
+      }
+    }
+  },
+  "ui_schema": {
+    "layout": {
+      "type": "column",
+      "spacing": "space_lg",
+      "sections": [
+        {
+          "id": "topic",
+          "type": "text",
+          "data_bind": "state.topic",
+          "style": "title"
+        },
+        {
+          "id": "options_grid",
+          "type": "grid",
+          "columns": 3,
+          "spacing": "space_md",
+          "children": ["option_approve", "option_reject", "option_abstain"]
+        },
+        {
+          "id": "summary",
+          "type": "card",
+          "data_bind": "state",
+          "variant": "neutral",
+          "children": ["summary_text"]
+        },
+        {
+          "id": "agent_panel",
+          "type": "card",
+          "children": ["agent_card"]
+        }
+      ]
+    },
+    "components": [
+      {
+        "id": "option_approve",
+        "type": "VoteCard",
+        "data_bind": "state.options[0]",
+        "action": "cast_vote",
+        "variant": "success",
+        "voting": false
+      },
+      {
+        "id": "option_reject",
+        "type": "VoteCard",
+        "data_bind": "state.options[1]",
+        "action": "cast_vote",
+        "variant": "danger",
+        "voting": false
+      },
+      {
+        "id": "option_abstain",
+        "type": "VoteCard",
+        "data_bind": "state.options[2]",
+        "action": "cast_vote",
+        "variant": "neutral",
+        "voting": false
+      },
+      {
+        "id": "summary_text",
+        "type": "SummaryBar",
+        "data_bind": "state",
+        "format": "总计: {total}票 · 法定人数: {quorum} · 结果: {result}"
+      },
+      {
+        "id": "agent_card",
+        "type": "AgentCard",
+        "data_bind": "state.agent_status + state.agent_message",
+        "auto_announce": true
+      }
+    ]
+  },
+  "interaction_protocol": {
+    "states": [
+      { "name": "voting", "description": "投票进行中" },
+      { "name": "closed", "description": "投票已关闭" },
+      { "name": "announcing", "description": "Agent 正在宣布结果" }
+    ],
+    "events": [
+      { "name": "onVoteCast", "payload": { "optionId": "string" } },
+      { "name": "onCloseVote", "payload": {} },
+      { "name": "onAnnounceResult", "payload": {} }
+    ],
+    "actions": [
+      {
+        "name": "castVote",
+        "trigger": "onVoteCast",
+        "effect": "增加对应选项票数，更新百分比和进度条",
+        "transitions": ["voting → voting"]
+      },
+      {
+        "name": "closeVoteAndAnnounce",
+        "trigger": "onCloseVote",
+        "effect": "关闭投票，计算结果是否通过，Agent 播报结果",
+        "transitions": ["voting → announcing → closed"]
+      }
+    ]
+  },
+  "design_tokens": {
+    "color": {
+      "approve": "success",
+      "reject": "danger",
+      "abstain": "text_tertiary",
+      "bar_fill_approve": "success",
+      "bar_fill_reject": "danger",
+      "bar_fill_abstain": "text_tertiary",
+      "summary_bg": "surface_muted",
+      "result_passed": "success",
+      "result_failed": "danger"
+    },
+    "typography": {
+      "topic": { "token": "title", "size": 22, "weight": "Medium" },
+      "count": { "token": "display", "size": 30, "weight": "Bold" },
+      "option_label": { "token": "subtitle", "size": 18, "weight": "Medium" },
+      "summary": { "token": "body", "size": 16, "weight": "Regular" }
+    },
+    "spacing": {
+      "grid_gap": "space_md",
+      "card_padding": "space_lg",
+      "bar_margin": "space_md"
+    },
+    "shape": {
+      "vote_card": "radius_md",
+      "bar": "radius_full",
+      "summary": "radius_md"
+    }
+  }
+}

@@ -219,8 +219,7 @@
 </style>
 </head>
 <body>
-<div id="app">
-
+<template id="app-template">
 <div class="flex flex-col h-screen overflow-hidden">
 
   <!-- Top Bar -->
@@ -654,13 +653,18 @@
         :title="showFloatingPanel ? '收起 Agent 面板' : '展开 Agent 面板'">
   <i :data-lucide="showFloatingPanel ? 'chevron-down' : 'sparkles'" class="w-5 h-5 text-white"></i>
 </button>
+</template>
 
-</div>
+<div id="app"></div>
 
 <script>
 const { createApp, ref, computed, watch, nextTick, onMounted } = Vue;
 
+const templateEl = document.getElementById('app-template');
+const templateHTML = templateEl ? templateEl.innerHTML : '<div>Template not found</div>';
+
 const app = createApp({
+  template: templateHTML,
   setup() {
     const theme = ref('light');
     const activeExample = ref('meeting');

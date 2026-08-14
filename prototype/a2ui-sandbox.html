@@ -6,18 +6,31 @@
 <title>A2UI 体验沙盒 · IdeaHub 大屏交互原型</title>
 <style>
 /* =====================================================================
-   HarmonyOS 设计令牌（来源: design-tokens.json v1.2.0）
-   品牌色 #007DFF · 4vp 间距基数 · 柔和阴影 · 沉浸光感
+   HarmonyOS 设计令牌（来源: skill-harmonyos-design-v3 · v3.0.1）
+   品牌色 #007DFF · 8vp 栅格 · 柔和阴影 · 沉浸光感
+   v3.0 功能色: success #36C85F / warning #FF9B00 / danger #FA2A2D
+   v3.0 阴影: card 0 1px 8px rgba(0,0,0,0.06) / float 0 4px 16px rgba(0,0,0,0.12)
+   v3.0 遮罩: rgba(0,0,0,0.45)
    ===================================================================== */
 :root {
   --brand: #007DFF;
   --brand-pressed: #0069D6;
+  --brand-light: #66A3FF;
+  --brand-dark: #0066CC;
   --brand-surface: #E8F3FF;
-  --success: #2E7D32;
-  --success-surface: #E6F4EA;
-  --warning: #F5A623;
-  --warning-surface: #FFF3D6;
-  --danger: #FF3B30;
+  --brand-gradient: linear-gradient(135deg, #007DFF, #66A3FF);
+  --success: #36C85F;
+  --success-surface: rgba(54,200,95,0.08);
+  --warning: #FF9B00;
+  --warning-surface: rgba(255,155,0,0.08);
+  --danger: #FA2A2D;
+  --danger-surface: rgba(250,42,45,0.08);
+  --rating-active: #FF8800;
+  --medal-gold: #F5A623;
+  --medal-silver: #9E9E9E;
+  --medal-bronze: #CD7F32;
+  --mask: rgba(0,0,0,0.45);
+  --toast-bg: rgba(0,0,0,0.80);
   --text-1: #181818;
   --text-2: #666666;
   --text-3: #999999;
@@ -26,8 +39,9 @@
   --surface-muted: #F5F6F7;
   --divider: #E8EAED;
   --bg: #F5F6F7;
-  --shadow-card: 0 2px 8px rgba(0,0,0,0.12);
-  --shadow-elev: 0 6px 16px rgba(0,0,0,0.16);
+  --shadow-card: 0 1px 8px rgba(0,0,0,0.06);
+  --shadow-elev: 0 4px 16px rgba(0,0,0,0.12);
+  --shadow-brand-glow: 0 4px 12px rgba(0,125,255,0.30);
   --glass: rgba(255,255,255,0.72);
   --glass-border: rgba(255,255,255,0.55);
   --r-sm: 8px;
@@ -40,12 +54,22 @@
 html[data-theme="dark"] {
   --brand: #3D9BFF;
   --brand-pressed: #2B82E6;
+  --brand-light: #66A3FF;
+  --brand-dark: #0066CC;
   --brand-surface: #123A5C;
+  --brand-gradient: linear-gradient(135deg, #3D9BFF, #66A3FF);
   --success: #4CAF50;
-  --success-surface: #1E3524;
+  --success-surface: rgba(76,175,80,0.16);
   --warning: #FFB84D;
-  --warning-surface: #3A3216;
+  --warning-surface: rgba(255,184,77,0.16);
   --danger: #FF6B61;
+  --danger-surface: rgba(255,107,97,0.16);
+  --rating-active: #FF8800;
+  --medal-gold: #F5A623;
+  --medal-silver: #B0B3B8;
+  --medal-bronze: #CD7F32;
+  --mask: rgba(0,0,0,0.60);
+  --toast-bg: rgba(0,0,0,0.80);
   --text-1: #E6E6E6;
   --text-2: #B0B3B8;
   --text-3: #8A8D93;
@@ -54,8 +78,9 @@ html[data-theme="dark"] {
   --surface-muted: #2A2A2E;
   --divider: #3A3A40;
   --bg: #1F1F22;
-  --shadow-card: 0 2px 8px rgba(0,0,0,0.50);
-  --shadow-elev: 0 6px 16px rgba(0,0,0,0.60);
+  --shadow-card: 0 1px 8px rgba(0,0,0,0.30);
+  --shadow-elev: 0 4px 16px rgba(0,0,0,0.40);
+  --shadow-brand-glow: 0 4px 12px rgba(61,155,255,0.30);
   --glass: rgba(31,31,34,0.78);
   --glass-border: rgba(255,255,255,0.10);
 }
@@ -86,7 +111,7 @@ body {
   top: 0;
   z-index: 100;
 }
-.topbar h1 { font-size: 22px; font-weight: 500; }
+.topbar h1 { font-size: 20px; font-weight: 500; }
 .topbar .sub { font-size: 14px; color: var(--text-3); margin-top: 4px; }
 .topbar .right { display: flex; gap: 12px; align-items: center; }
 
@@ -127,7 +152,7 @@ body {
   background: var(--brand-surface);
   color: var(--brand);
 }
-.scene-btn.active .tag { background: rgba(255,255,255,0.2); color: #fff; }
+.scene-btn.active .tag { background: rgba(255,255,255,0.20); color: #fff; }
 
 /* ============ 主舞台 ============ */
 .stage {
@@ -178,7 +203,7 @@ body {
   text-align: center;
 }
 .stat-card .stat-num {
-  font-size: 30px;
+  font-size: 28px;
   font-weight: 700;
   line-height: 1;
 }
@@ -262,7 +287,7 @@ body {
   overflow-y: auto;
 }
 .person-item {
-  padding: 12px 16px;
+  padding: 16px 16px;
   background: var(--surface);
   border-radius: var(--r-md);
   border: 1px solid var(--divider);
@@ -271,6 +296,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  min-height: 48px;
 }
 .person-item:hover { border-color: var(--brand); transform: translateX(2px); }
 .person-item .name {
@@ -398,10 +424,10 @@ body {
   animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 .photo-wall-cell.filled.even {
-  background: linear-gradient(135deg, var(--brand), #66A3FF);
+  background: linear-gradient(135deg, var(--brand), var(--brand-light));
 }
 .photo-wall-cell.filled.odd {
-  background: linear-gradient(135deg, #0066CC, var(--brand));
+  background: linear-gradient(135deg, var(--brand-dark), var(--brand));
 }
 @keyframes popIn {
   0% { transform: scale(0); opacity: 0; }
@@ -410,21 +436,21 @@ body {
 
 /* 扫码签到按钮 */
 .qr-trigger-btn {
-  background: linear-gradient(135deg, var(--brand), #66A3FF);
+  background: var(--brand-gradient);
   color: #fff;
   border: none;
   padding: 8px 16px;
-  border-radius: var(--r-full);
-  font-size: 13px;
+  border-radius: var(--r-sm);
+  font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   font-family: var(--font);
 }
-.qr-trigger-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,125,255,0.3); }
+.qr-trigger-btn:hover { transform: translateY(-1px); box-shadow: var(--shadow-brand-glow); }
 
 @keyframes slideIn {
   0% { transform: translateY(-50%) translateX(120%); opacity: 0; }
@@ -475,14 +501,14 @@ body {
 
 .agent-wave {
   display: flex;
-  gap: 3px;
+  gap: 4px;
   align-items: flex-end;
   height: 20px;
 }
 .agent-wave span {
-  width: 3px;
+  width: 4px;
   background: var(--brand);
-  border-radius: 2px;
+  border-radius: var(--r-sm);
   animation: wave 0.8s ease infinite;
 }
 .agent-wave span:nth-child(1) { height: 10px; animation-delay: 0s; }
@@ -538,7 +564,7 @@ body {
 }
 .vote-topic {
   text-align: center;
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 500;
   margin-bottom: 12px;
 }
@@ -560,7 +586,7 @@ body {
 }
 .vote-option:hover { border-color: var(--brand); transform: translateY(-2px); }
 .vote-option .label { font-size: 16px; font-weight: 500; margin-bottom: 8px; }
-.vote-option .count { font-size: 30px; font-weight: 700; line-height: 1; }
+.vote-option .count { font-size: 28px; font-weight: 700; line-height: 1; }
 .vote-option.approve .count { color: var(--brand); }
 .vote-option.reject .count { color: var(--danger); }
 .vote-option.abstain .count { color: var(--text-3); }
@@ -649,7 +675,7 @@ body {
   gap: 16px;
   padding: 24px;
 }
-.score-header { text-align: center; font-size: 22px; font-weight: 500; }
+.score-header { text-align: center; font-size: 20px; font-weight: 500; }
 .score-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -666,12 +692,12 @@ body {
 }
 .score-card:hover { transform: translateY(-2px); }
 .score-card .group-name { font-size: 14px; color: var(--text-2); margin-bottom: 8px; }
-.score-card .score-value { font-size: 30px; font-weight: 700; color: var(--brand); line-height: 1; }
+.score-card .score-value { font-size: 28px; font-weight: 700; color: var(--brand); line-height: 1; }
 .score-card .rank { font-size: 18px; margin: 8px 0; }
 .score-card .history { font-size: 12px; color: var(--text-3); }
-.score-card.rank-1 { background: var(--brand-surface); border-color: #F5A623; }
-.score-card.rank-2 { border-color: #9E9E9E; }
-.score-card.rank-3 { border-color: #CD7F32; }
+.score-card.rank-1 { background: var(--brand-surface); border-color: var(--medal-gold); }
+.score-card.rank-2 { border-color: var(--medal-silver); }
+.score-card.rank-3 { border-color: var(--medal-bronze); }
 .score-actions { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
 
 /* ============ IdeaHub Whiteboard Scene ============ */
@@ -753,7 +779,7 @@ body {
 }
 .a2ui-panel .option-list { display: flex; flex-direction: column; gap: 8px; }
 .a2ui-panel .option-item {
-  padding: 10px 14px;
+  padding: 12px 16px;
   background: var(--surface);
   border: 1px solid var(--divider);
   border-radius: var(--r-md);
@@ -807,8 +833,8 @@ body {
   bottom: 8px;
   left: 8px;
   font-size: 12px;
-  color: var(--text-inv);
-  background: rgba(0,0,0,0.5);
+  color: #FFFFFF;
+  background: var(--mask);
   padding: 2px 8px;
   border-radius: var(--r-full);
 }
@@ -879,7 +905,7 @@ body {
   background: var(--brand);
   color: #fff;
   border: none;
-  font-size: 22px;
+  font-size: 24px;
   cursor: pointer;
   box-shadow: var(--shadow-elev);
   transition: all 0.15s cubic-bezier(0.4,0,0.2,1);
@@ -894,7 +920,7 @@ body {
 .feedback-modal {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.5);
+  background: var(--mask);
   display: none;
   align-items: center;
   justify-content: center;
@@ -910,7 +936,7 @@ body {
   box-shadow: var(--shadow-elev);
   padding: 24px;
 }
-.feedback-box h3 { font-size: 22px; font-weight: 500; margin-bottom: 8px; }
+.feedback-box h3 { font-size: 20px; font-weight: 500; margin-bottom: 8px; }
 .feedback-box p { font-size: 14px; color: var(--text-2); margin-bottom: 16px; }
 .feedback-rating {
   display: flex;
@@ -924,7 +950,7 @@ body {
   color: var(--text-3);
   transition: color 0.15s;
 }
-.feedback-rating .star.active { color: var(--warning); }
+.feedback-rating .star.active { color: var(--rating-active); }
 .feedback-box textarea {
   width: 100%;
   min-height: 80px;
@@ -947,17 +973,18 @@ body {
   margin-top: 16px;
 }
 
-/* ============ Toast ============ */
+/* ============ Toast (v3.0: 圆角 8vp · 内边距 12/8vp · 黑 80% 透明) ============ */
 .toast {
   position: fixed;
   top: 80px;
   left: 50%;
   transform: translate(-50%, -20px);
-  background: var(--text-1);
-  color: var(--text-inv);
-  padding: 12px 24px;
-  border-radius: var(--r-full);
+  background: var(--toast-bg);
+  color: #FFFFFF;
+  padding: 8px 12px;
+  border-radius: var(--r-sm);
   font-size: 14px;
+  max-width: 280px;
   opacity: 0;
   pointer-events: none;
   transition: all 0.25s cubic-bezier(0.4,0,0.2,1);
@@ -966,29 +993,35 @@ body {
 }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
 
-/* ============ 按钮通用 ============ */
+/* ============ 按钮通用 (v3.0: 普通按钮圆角 8vp, 胶囊按钮保留 r-full) ============ */
 .btn {
   border: none;
   cursor: pointer;
   font-family: var(--font);
-  border-radius: var(--r-full);
+  border-radius: var(--r-sm);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   font-size: 14px;
+  font-weight: 500;
   transition: transform 0.1s cubic-bezier(0.4,0,0.2,1), background 0.15s;
   user-select: none;
   padding: 12px 24px;
+  min-height: 40px;
 }
 .btn:active { transform: scale(0.95); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
 .btn-primary { background: var(--brand); color: #fff; }
 .btn-primary:hover { background: var(--brand-pressed); }
+.btn-primary:active { background: var(--brand-pressed); }
 .btn-outline { background: transparent; color: var(--brand); border: 1px solid var(--brand); }
 .btn-outline:hover { background: var(--brand-surface); }
 .btn-ghost { background: var(--surface-muted); color: var(--text-1); }
 .btn-ghost:hover { background: var(--divider); }
-.btn-sm { padding: 8px 16px; font-size: 14px; }
+.btn-sm { padding: 8px 16px; font-size: 14px; min-height: 36px; }
+/* 胶囊按钮专用 (圆角 = 高度的一半) */
+.btn-capsule { border-radius: var(--r-full); }
 
 /* ============ Responsive ============ */
 @media (max-width: 840px) {
@@ -1100,7 +1133,7 @@ body {
       <div class="photo-wall-container" id="photoWallContainer" style="display:none;">
         <div class="photo-wall-title">
           📸 签到墙 · 实时展示
-          <span id="wallCount" style="color:var(--brand);font-weight:600;">0</span> 人已签到
+          <span id="wallCount" style="color:var(--brand);font-weight:500;">0</span> 人已签到
         </div>
         <div class="photo-wall" id="photoWall">
           <!-- 8x6 = 48 cells, 签到后填充 -->
@@ -1241,21 +1274,21 @@ body {
   <section class="scene-content" id="scene-whiteboard">
     <div class="section whiteboard-screen">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-        <div style="font-size:16px;font-weight:600;">IdeaHub 白板 · A2UI 增强演示</div>
+        <div style="font-size:16px;font-weight:500;">IdeaHub 白板 · A2UI 增强演示</div>
         <span style="font-size:12px;color:var(--text-3);">对比：原始白板 vs A2UI 增强</span>
       </div>
 
       <div class="whiteboard-main">
-        <div class="whiteboard-canvas" id="whiteboardCanvas">
-          <svg viewBox="0 0 500 200" xmlns="http://www.w3.org/2000/svg">
-            <polygon points="250,30 400,170 100,170" fill="none" stroke="#666" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="0" id="triangle" />
-            <text x="250" y="195" text-anchor="middle" fill="#999" font-size="12">手写三角形（不规整）</text>
+        <div class="whiteboard-canvas" id="whiteboardCanvas" style="color:var(--text-2);">
+          <svg viewBox="0 0 500 200" xmlns="http://www.w3.org/2000/svg" style="color:var(--text-2);">
+            <polygon points="250,30 400,170 100,170" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="0" id="triangle" />
+            <text x="250" y="195" text-anchor="middle" fill="var(--text-3, #999)" font-size="14">手写三角形（不规整）</text>
           </svg>
         </div>
 
         <div class="a2ui-panel" id="whiteboardPanel">
           <div class="panel-title">🤖 Agent 识别结果</div>
-          <div style="font-size:13px;color:var(--text-2);margin-bottom:12px;">检测到手写图形，建议：</div>
+          <div style="font-size:14px;color:var(--text-2);margin-bottom:12px;">检测到手写图形，建议：</div>
           <div class="option-list">
             <button class="option-item" onclick="applyWhiteboardAction('regular')">
               <span style="font-size:16px;">📐</span> 正三角形
@@ -1351,18 +1384,18 @@ body {
 <div class="qr-checkin-panel" id="qrCheckinPanel">
   <div class="qr-title">📱 扫码签到</div>
   <div class="qr-container" id="qrContainer">
-    <!-- SVG 二维码占位 -->
+    <!-- SVG 二维码占位 (v3.0 规范: 前景 #000000 / 背景 #FFFFFF) -->
     <svg id="qrSvg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-      <rect width="100" height="100" fill="#fff"/>
+      <rect width="100" height="100" fill="#FFFFFF"/>
       <!-- 定位角 -->
-      <rect x="5" y="5" width="25" height="25" fill="none" stroke="#007DFF" stroke-width="4"/>
-      <rect x="70" y="5" width="25" height="25" fill="none" stroke="#007DFF" stroke-width="4"/>
-      <rect x="5" y="70" width="25" height="25" fill="none" stroke="#007DFF" stroke-width="4"/>
-      <rect x="12" y="12" width="11" height="11" fill="#007DFF"/>
-      <rect x="77" y="12" width="11" height="11" fill="#007DFF"/>
-      <rect x="12" y="77" width="11" height="11" fill="#007DFF"/>
+      <rect x="5" y="5" width="25" height="25" fill="none" stroke="#000000" stroke-width="4"/>
+      <rect x="70" y="5" width="25" height="25" fill="none" stroke="#000000" stroke-width="4"/>
+      <rect x="5" y="70" width="25" height="25" fill="none" stroke="#000000" stroke-width="4"/>
+      <rect x="12" y="12" width="11" height="11" fill="#000000"/>
+      <rect x="77" y="12" width="11" height="11" fill="#000000"/>
+      <rect x="12" y="77" width="11" height="11" fill="#000000"/>
       <!-- 随机数据点 -->
-      <g fill="#181818">
+      <g fill="#000000">
         <rect x="40" y="10" width="8" height="8"/>
         <rect x="55" y="15" width="5" height="5"/>
         <rect x="42" y="25" width="6" height="6"/>
@@ -1841,7 +1874,7 @@ function applyWhiteboardAction(action) {
     tri.setAttribute('stroke-width', '2');
     showToast('✅ 已修正为正三角形');
   } else if (action === 'circle') {
-    svg.innerHTML = '<circle cx="250" cy="100" r="60" fill="none" stroke="#666" stroke-width="2"/><text x="250" y="195" text-anchor="middle" fill="#999" font-size="12">已转换为圆形</text>';
+    svg.innerHTML = '<circle cx="250" cy="100" r="60" fill="none" stroke="currentColor" stroke-width="2"/><text x="250" y="195" text-anchor="middle" fill="var(--text-3, #999)" font-size="14">已转换为圆形</text>';
     showToast('✅ 已转换为圆形');
   } else if (action === 'apply') {
     showToast('✅ 已应用美化');

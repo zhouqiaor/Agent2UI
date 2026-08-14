@@ -1,0 +1,239 @@
+[
+  {
+    "version": "v0.9.1",
+    "createSurface": {
+      "surfaceId": "meeting",
+      "catalogId": "https://a2ui.org/specification/v0_9_1/catalogs/basic/catalog.json"
+    }
+  },
+  {
+    "version": "v0.9.1",
+    "updateComponents": {
+      "surfaceId": "meeting",
+      "components": [
+        {
+          "id": "root",
+          "component": "Column",
+          "children": ["header-row", "content-row", "agent-panel"]
+        },
+        {
+          "id": "header-row",
+          "component": "Row",
+          "children": ["meeting-title", "meeting-time"]
+        },
+        {
+          "id": "meeting-title",
+          "component": "Text",
+          "text": {"path": "/meeting/title"},
+          "variant": "h2"
+        },
+        {
+          "id": "meeting-time",
+          "component": "Text",
+          "text": {"path": "/meeting/time"},
+          "variant": "caption"
+        },
+        {
+          "id": "content-row",
+          "component": "Row",
+          "children": ["video-grid", "side-panel"]
+        },
+        {
+          "id": "video-grid",
+          "component": "Column",
+          "children": ["participant-1", "participant-2", "screen-share"]
+        },
+        {
+          "id": "participant-1",
+          "component": "Card",
+          "children": ["p1-name", "p1-status"]
+        },
+        {
+          "id": "p1-name",
+          "component": "Text",
+          "text": {"path": "/participants/0/name"},
+          "variant": "subtitle"
+        },
+        {
+          "id": "p1-status",
+          "component": "Text",
+          "text": {"path": "/participants/0/status"},
+          "variant": "caption"
+        },
+        {
+          "id": "participant-2",
+          "component": "Card",
+          "children": ["p2-name", "p2-status"]
+        },
+        {
+          "id": "p2-name",
+          "component": "Text",
+          "text": {"path": "/participants/1/name"},
+          "variant": "subtitle"
+        },
+        {
+          "id": "p2-status",
+          "component": "Text",
+          "text": {"path": "/participants/1/status"},
+          "variant": "caption"
+        },
+        {
+          "id": "screen-share",
+          "component": "Card",
+          "children": ["screen-title", "screen-content"]
+        },
+        {
+          "id": "screen-title",
+          "component": "Text",
+          "text": "📺 屏幕共享: Q3_Budget_v2.pdf",
+          "variant": "subtitle"
+        },
+        {
+          "id": "screen-content",
+          "component": "Text",
+          "text": {"path": "/screen/content"},
+          "variant": "body"
+        },
+        {
+          "id": "side-panel",
+          "component": "Column",
+          "children": ["subtitle-panel", "minutes-panel"]
+        },
+        {
+          "id": "subtitle-panel",
+          "component": "Card",
+          "children": ["subtitle-title", "subtitle-content"]
+        },
+        {
+          "id": "subtitle-title",
+          "component": "Text",
+          "text": "💬 实时字幕",
+          "variant": "subtitle"
+        },
+        {
+          "id": "subtitle-content",
+          "component": "Column",
+          "children": {"path": "/subtitles", "componentId": "subtitle-line-template"}
+        },
+        {
+          "id": "subtitle-line-template",
+          "component": "Row",
+          "children": ["subtitle-speaker", "subtitle-text"]
+        },
+        {
+          "id": "subtitle-speaker",
+          "component": "Text",
+          "text": {"path": "/speaker"},
+          "variant": "caption"
+        },
+        {
+          "id": "subtitle-text",
+          "component": "Text",
+          "text": {"path": "/text"},
+          "variant": "body"
+        },
+        {
+          "id": "minutes-panel",
+          "component": "Card",
+          "children": ["minutes-title", "minutes-actions", "minutes-content"]
+        },
+        {
+          "id": "minutes-title",
+          "component": "Text",
+          "text": "📋 AI 会议纪要",
+          "variant": "subtitle"
+        },
+        {
+          "id": "minutes-actions",
+          "component": "Row",
+          "children": ["btn-generate", "btn-export"]
+        },
+        {
+          "id": "btn-generate",
+          "component": "Button",
+          "child": "btn-generate-label",
+          "variant": "primary",
+          "action": {"event": {"name": "generate_minutes"}}
+        },
+        {
+          "id": "btn-generate-label",
+          "component": "Text",
+          "text": "🤖 生成纪要",
+          "variant": "body"
+        },
+        {
+          "id": "btn-export",
+          "component": "Button",
+          "child": "btn-export-label",
+          "variant": "outline",
+          "action": {"event": {"name": "export_minutes"}}
+        },
+        {
+          "id": "btn-export-label",
+          "component": "Text",
+          "text": "📤 导出",
+          "variant": "body"
+        },
+        {
+          "id": "minutes-content",
+          "component": "Text",
+          "text": {"path": "/minutes/summary"},
+          "variant": "body"
+        },
+        {
+          "id": "agent-panel",
+          "component": "Card",
+          "children": ["agent-title", "agent-message"]
+        },
+        {
+          "id": "agent-title",
+          "component": "Text",
+          "text": "🤖 A2UI 会议助手",
+          "variant": "subtitle"
+        },
+        {
+          "id": "agent-message",
+          "component": "Text",
+          "text": {"path": "/agent/message"},
+          "variant": "body"
+        }
+      ]
+    }
+  },
+  {
+    "version": "v0.9.1",
+    "updateDataModel": {
+      "surfaceId": "meeting",
+      "value": {
+        "meeting": {
+          "title": "Q3 预算方案评审会",
+          "time": "⏱️ 00:45:32"
+        },
+        "participants": [
+          {"name": "张总", "status": "🎤 发言中"},
+          {"name": "李经理", "status": "👂 聆听"}
+        ],
+        "screen": {
+          "content": "核心数据: 研发投入 ¥2,800万 · 占比 35% · 同比 +12%"
+        },
+        "subtitles": [
+          {"speaker": "张总:", "text": "研发投入部分再详细说说"},
+          {"speaker": "AI:", "text": "已定位到 PPT 第 7 页，正在解析研发投入明细..."}
+        ],
+        "minutes": {
+          "summary": "• 重点讨论: 研发投入占比 (35%)\n• 待决策项: 市场预算分配\n• 风险点: 供应链成本上涨"
+        },
+        "agent": {
+          "message": "实时转写中 · 点击「生成纪要」一键生成会议摘要"
+        }
+      }
+    }
+  },
+  {
+    "version": "v0.9.1",
+    "beginRendering": {
+      "surfaceId": "meeting",
+      "root": "root"
+    }
+  }
+]

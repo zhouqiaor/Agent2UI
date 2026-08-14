@@ -1,0 +1,207 @@
+[
+  {
+    "version": "v0.9.1",
+    "createSurface": {
+      "surfaceId": "vote",
+      "catalogId": "https://a2ui.org/specification/v0_9_1/catalogs/basic/catalog.json"
+    }
+  },
+  {
+    "version": "v0.9.1",
+    "updateComponents": {
+      "surfaceId": "vote",
+      "components": [
+        {
+          "id": "root",
+          "component": "Column",
+          "children": ["topic", "options-row", "summary-card", "agent-panel"]
+        },
+        {
+          "id": "topic",
+          "component": "Text",
+          "text": {"path": "/topic"},
+          "variant": "h2"
+        },
+        {
+          "id": "options-row",
+          "component": "Row",
+          "children": ["option-approve", "option-reject", "option-abstain"]
+        },
+        {
+          "id": "option-approve",
+          "component": "Card",
+          "children": ["approve-icon", "approve-count", "approve-label", "approve-btn"]
+        },
+        {
+          "id": "approve-icon",
+          "component": "Text",
+          "text": "👍",
+          "variant": "h2"
+        },
+        {
+          "id": "approve-count",
+          "component": "Text",
+          "text": {"path": "/options/approve/count"},
+          "variant": "h1"
+        },
+        {
+          "id": "approve-label",
+          "component": "Text",
+          "text": "赞成",
+          "variant": "subtitle"
+        },
+        {
+          "id": "approve-btn",
+          "component": "Button",
+          "child": "approve-btn-label",
+          "variant": "primary",
+          "action": {"event": {"name": "vote_approve"}}
+        },
+        {
+          "id": "approve-btn-label",
+          "component": "Text",
+          "text": "投票",
+          "variant": "body"
+        },
+        {
+          "id": "option-reject",
+          "component": "Card",
+          "children": ["reject-icon", "reject-count", "reject-label", "reject-btn"]
+        },
+        {
+          "id": "reject-icon",
+          "component": "Text",
+          "text": "👎",
+          "variant": "h2"
+        },
+        {
+          "id": "reject-count",
+          "component": "Text",
+          "text": {"path": "/options/reject/count"},
+          "variant": "h1"
+        },
+        {
+          "id": "reject-label",
+          "component": "Text",
+          "text": "反对",
+          "variant": "subtitle"
+        },
+        {
+          "id": "reject-btn",
+          "component": "Button",
+          "child": "reject-btn-label",
+          "variant": "primary",
+          "action": {"event": {"name": "vote_reject"}}
+        },
+        {
+          "id": "reject-btn-label",
+          "component": "Text",
+          "text": "投票",
+          "variant": "body"
+        },
+        {
+          "id": "option-abstain",
+          "component": "Card",
+          "children": ["abstain-icon", "abstain-count", "abstain-label", "abstain-btn"]
+        },
+        {
+          "id": "abstain-icon",
+          "component": "Text",
+          "text": "🤷",
+          "variant": "h2"
+        },
+        {
+          "id": "abstain-count",
+          "component": "Text",
+          "text": {"path": "/options/abstain/count"},
+          "variant": "h1"
+        },
+        {
+          "id": "abstain-label",
+          "component": "Text",
+          "text": "弃权",
+          "variant": "subtitle"
+        },
+        {
+          "id": "abstain-btn",
+          "component": "Button",
+          "child": "abstain-btn-label",
+          "variant": "primary",
+          "action": {"event": {"name": "vote_abstain"}}
+        },
+        {
+          "id": "abstain-btn-label",
+          "component": "Text",
+          "text": "投票",
+          "variant": "body"
+        },
+        {
+          "id": "summary-card",
+          "component": "Card",
+          "children": ["summary-text", "close-btn"]
+        },
+        {
+          "id": "summary-text",
+          "component": "Text",
+          "text": {"path": "/summary"},
+          "variant": "body"
+        },
+        {
+          "id": "close-btn",
+          "component": "Button",
+          "child": "close-btn-label",
+          "variant": "outline",
+          "action": {"event": {"name": "close_vote"}}
+        },
+        {
+          "id": "close-btn-label",
+          "component": "Text",
+          "text": "结束投票并宣布结果",
+          "variant": "body"
+        },
+        {
+          "id": "agent-panel",
+          "component": "Card",
+          "children": ["agent-title", "agent-message"]
+        },
+        {
+          "id": "agent-title",
+          "component": "Text",
+          "text": "🤖 AI 助手",
+          "variant": "subtitle"
+        },
+        {
+          "id": "agent-message",
+          "component": "Text",
+          "text": {"path": "/agent/message"},
+          "variant": "body"
+        }
+      ]
+    }
+  },
+  {
+    "version": "v0.9.1",
+    "updateDataModel": {
+      "surfaceId": "vote",
+      "value": {
+        "topic": "是否通过 Q3 预算方案？",
+        "options": {
+          "approve": {"count": 8},
+          "reject": {"count": 2},
+          "abstain": {"count": 1}
+        },
+        "summary": "总计: 11票 · 法定人数: 10 · 当前状态: 投票进行中",
+        "agent": {
+          "message": "投票进行中 · 点击对应选项进行投票"
+        }
+      }
+    }
+  },
+  {
+    "version": "v0.9.1",
+    "beginRendering": {
+      "surfaceId": "vote",
+      "root": "root"
+    }
+  }
+]

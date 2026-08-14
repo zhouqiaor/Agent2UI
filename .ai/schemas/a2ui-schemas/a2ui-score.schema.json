@@ -1,0 +1,197 @@
+{
+  "$schema": "https://a2ui.dev/schema/v1",
+  "meta": {
+    "scene_id": "score",
+    "scene_name": "分组计分",
+    "version": "1.0.0",
+    "source": "agent",
+    "harmony_version": "1.2.0",
+    "description": "教育/会议场景：团队竞技计分与排名展示"
+  },
+  "intent": {
+    "primary": "为多个分组展示实时得分，支持加减分操作和排名展示，Agent 提供奖励建议",
+    "actions": [
+      "add_score",
+      "subtract_score",
+      "export_board",
+      "reset_board",
+      "agent_suggest_reward"
+    ]
+  },
+  "data_model": {
+    "state": {
+      "groups": "Group[]",
+      "current_task": "string",
+      "agent_status": "idle | listening | processing | done",
+      "agent_message": "string"
+    },
+    "entities": {
+      "Group": {
+        "id": "string",
+        "name": "string",
+        "score": "number",
+        "rank": "number",
+        "history": "ScoreEntry[]",
+        "rank_color": "gold | silver | bronze | none"
+      },
+      "ScoreEntry": {
+        "id": "string",
+        "delta": "number (positive for add, negative for subtract)",
+        "reason": "string",
+        "timestamp": "number"
+      }
+    }
+  },
+  "ui_schema": {
+    "layout": {
+      "type": "column",
+      "spacing": "space_md",
+      "sections": [
+        {
+          "id": "header",
+          "type": "text",
+          "data_bind": "📊 分组计分板 · {current_task}",
+          "style": "subtitle",
+          "alignment": "center"
+        },
+        {
+          "id": "score_grid",
+          "type": "grid",
+          "columns": 4,
+          "spacing": "space_md",
+          "children": ["group_a", "group_b", "group_c", "group_d"]
+        },
+        {
+          "id": "actions",
+          "type": "row",
+          "alignment": "center",
+          "spacing": "space_2xs",
+          "children": ["btn_add", "btn_sub", "btn_export", "btn_reset"]
+        },
+        {
+          "id": "agent_panel",
+          "type": "card",
+          "children": ["agent_card"]
+        }
+      ]
+    },
+    "components": [
+      {
+        "id": "group_a",
+        "type": "ScoreCard",
+        "data_bind": "state.groups[0]",
+        "action_add": "add_score",
+        "action_sub": "subtract_score",
+        "variant": "ranked"
+      },
+      {
+        "id": "group_b",
+        "type": "ScoreCard",
+        "data_bind": "state.groups[1]",
+        "action_add": "add_score",
+        "action_sub": "subtract_score",
+        "variant": "ranked"
+      },
+      {
+        "id": "group_c",
+        "type": "ScoreCard",
+        "data_bind": "state.groups[2]",
+        "action_add": "add_score",
+        "action_sub": "subtract_score",
+        "variant": "ranked"
+      },
+      {
+        "id": "group_d",
+        "type": "ScoreCard",
+        "data_bind": "state.groups[3]",
+        "action_add": "add_score",
+        "action_sub": "subtract_score",
+        "variant": "ranked",
+        "conditional": "state.groups.length >= 4"
+      },
+      {
+        "id": "btn_add",
+        "type": "Button",
+        "text": "+ 加分",
+        "intent": "add_score",
+        "variant": "primary"
+      },
+      {
+        "id": "btn_sub",
+        "type": "Button",
+        "text": "− 减分",
+        "intent": "subtract_score",
+        "variant": "danger"
+      },
+      {
+        "id": "btn_export",
+        "type": "Button",
+        "text": "📋 导出",
+        "intent": "export_board",
+        "variant": "outline"
+      },
+      {
+        "id": "btn_reset",
+        "type": "Button",
+        "text": "↻ 重置",
+        "intent": "reset_board",
+        "variant": "ghost"
+      },
+      {
+        "id": "agent_card",
+        "type": "AgentCard",
+        "data_bind": "state.agent_status + state.agent_message"
+      }
+    ]
+  },
+  "interaction_protocol": {
+    "states": [
+      { "name": "active", "description": "计分进行中" },
+      { "name": "paused", "description": "计分暂停" },
+      { "name": "completed", "description": "计分完成" }
+    ],
+    "events": [
+      { "name": "onScoreChange", "payload": { "groupId": "string", "delta": "number" } },
+      { "name": "onExport", "payload": {} },
+      { "name": "onReset", "payload": {} }
+    ],
+    "actions": [
+      {
+        "name": "changeScore",
+        "trigger": "onScoreChange",
+        "effect": "更新分组得分，重新计算排名和 rank_color",
+        "transitions": ["active → active"]
+      },
+      {
+        "name": "exportBoard",
+        "trigger": "onExport",
+        "effect": "导出当前计分板为 JSON/CSV",
+        "transitions": ["active → active"]
+      }
+    ]
+  },
+  "design_tokens": {
+    "color": {
+      "rank_gold": "#F5A623",
+      "rank_silver": "#9E9E9E",
+      "rank_bronze": "#CD7F32",
+      "score_value": "brand",
+      "score_history": "text_tertiary",
+      "card_bg": "surface_muted",
+      "card_active": "brand_surface"
+    },
+    "typography": {
+      "group_name": { "token": "caption", "size": 14, "weight": "Regular" },
+      "score_value": { "token": "display", "size": 30, "weight": "Bold" },
+      "rank": { "token": "subtitle", "size": 18, "weight": "Medium" },
+      "history": { "token": "overline", "size": 12, "weight": "Regular" }
+    },
+    "spacing": {
+      "card_padding": "space_md",
+      "grid_gap": "space_md"
+    },
+    "shape": {
+      "score_card": "radius_md"
+    }
+  }
+}

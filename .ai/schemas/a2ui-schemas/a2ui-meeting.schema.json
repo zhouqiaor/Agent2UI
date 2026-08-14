@@ -1,0 +1,206 @@
+{
+  "$schema": "https://a2ui.dev/schema/v1",
+  "meta": {
+    "scene_id": "meeting",
+    "scene_name": "IdeaHub 会议 · A2UI 增强",
+    "version": "1.0.0",
+    "source": "agent",
+    "harmony_version": "1.2.0",
+    "description": "会议场景：Agent 实时字幕、会议纪要生成、重点标记"
+  },
+  "intent": {
+    "primary": "实时转写会议内容，自动生成会议纪要并提取关键信息",
+    "actions": [
+      "start_transcription",
+      "stop_transcription",
+      "generate_minutes",
+      "mark_keypoint",
+      "search_meeting_content",
+      "export_minutes"
+    ]
+  },
+  "data_model": {
+    "state": {
+      "participants": "Participant[]",
+      "is_transcribing": "boolean",
+      "subtitle_lines": "SubtitleLine[]",
+      "minutes_sections": "MinutesSection[]",
+      "auto_minutes_enabled": "boolean",
+      "agent_status": "idle | listening | processing | done",
+      "meeting_started_at": "number | null",
+      "elapsed_time": "string"
+    },
+    "entities": {
+      "Participant": {
+        "id": "string",
+        "name": "string",
+        "role": "string",
+        "avatar_color": "string",
+        "is_speaking": "boolean",
+        "is_screen_sharing": "boolean"
+      },
+      "SubtitleLine": {
+        "id": "string",
+        "speaker_id": "string",
+        "speaker_name": "string",
+        "text": "string",
+        "timestamp": "number",
+        "is_keypoint": "boolean"
+      },
+      "MinutesSection": {
+        "id": "string",
+        "type": "action_item | decision | discussion | risk",
+        "title": "string",
+        "content": "string",
+        "source_subtitle_ids": "string[]",
+        "created_at": "number"
+      }
+    }
+  },
+  "ui_schema": {
+    "layout": {
+      "type": "row",
+      "spacing": "space_md",
+      "columns": "1fr + 320px",
+      "sections": [
+        {
+          "id": "video_grid",
+          "type": "grid",
+          "columns": 3,
+          "spacing": "space_sm",
+          "children": ["participant_1", "participant_2", "participant_3", "screen_share"]
+        },
+        {
+          "id": "side_panel",
+          "type": "column",
+          "spacing": "space_sm",
+          "children": ["subtitle_panel", "minutes_panel"]
+        },
+        {
+          "id": "agent_panel",
+          "type": "card",
+          "position": "bottom",
+          "children": ["agent_card"]
+        }
+      ]
+    },
+    "components": [
+      {
+        "id": "participant_1",
+        "type": "VideoThumb",
+        "data_bind": "state.participants[0]",
+        "variant": "person"
+      },
+      {
+        "id": "participant_2",
+        "type": "VideoThumb",
+        "data_bind": "state.participants[1]",
+        "variant": "person"
+      },
+      {
+        "id": "participant_3",
+        "type": "VideoThumb",
+        "data_bind": "state.participants[2]",
+        "variant": "person"
+      },
+      {
+        "id": "screen_share",
+        "type": "VideoThumb",
+        "data_bind": "state.participants[is_screen_sharing=true]",
+        "variant": "screen",
+        "span": 3
+      },
+      {
+        "id": "subtitle_panel",
+        "type": "TranscriptionPanel",
+        "data_bind": "state.subtitle_lines",
+        "features": ["realtime", "speaker_diarization", "auto_scroll"],
+        "max_lines": 20
+      },
+      {
+        "id": "minutes_panel",
+        "type": "MinutesPanel",
+        "data_bind": "state.minutes_sections",
+        "features": ["toggle_sections", "auto_generate", "manual_edit"],
+        "sections": [
+          { "id": "action_items", "label": "☐ 待办项", "type": "checkbox" },
+          { "id": "decisions", "label": "☑ 决议事项", "type": "checkbox" },
+          { "id": "discussions", "label": "☐ 讨论要点", "type": "checkbox" },
+          { "id": "risks", "label": "☐ 风险点", "type": "checkbox" }
+        ]
+      },
+      {
+        "id": "agent_card",
+        "type": "AgentCard",
+        "data_bind": "state.agent_status",
+        "actions": [
+          { "id": "generate_minutes", "label": "🤖 生成纪要", "intent": "generate_minutes" }
+        ],
+        "auto_summarize": true
+      }
+    ]
+  },
+  "interaction_protocol": {
+    "states": [
+      { "name": "idle", "description": "等待开始会议" },
+      { "name": "transcribing", "description": "正在实时转写" },
+      { "name": "generating_minutes", "description": "Agent 正在生成纪要" },
+      { "name": "completed", "description": "会议结束" }
+    ],
+    "events": [
+      { "name": "onSpeak", "payload": { "participantId": "string", "text": "string" } },
+      { "name": "onGenerateMinutes", "payload": {} },
+      { "name": "onToggleSection", "payload": { "sectionId": "string", "checked": "boolean" } },
+      { "name": "onMarkKeypoint", "payload": { "subtitleId": "string" } },
+      { "name": "onExport", "payload": { "format": "markdown | pdf | json" } }
+    ],
+    "actions": [
+      {
+        "name": "transcribe",
+        "trigger": "onSpeak",
+        "effect": "实时追加字幕行，识别说话人，判断是否为关键点",
+        "transitions": ["transcribing → transcribing"]
+      },
+      {
+        "name": "generateMinutes",
+        "trigger": "onGenerateMinutes",
+        "effect": "分析全部字幕，自动提取决议/待办/风险点，生成结构化纪要",
+        "transitions": ["transcribing → generating_minutes → transcribing"]
+      },
+      {
+        "name": "toggleMinutesSection",
+        "trigger": "onToggleSection",
+        "effect": "切换纪要分区的启用状态，重新生成该分区内容",
+        "transitions": ["transcribing → transcribing"]
+      }
+    ]
+  },
+  "design_tokens": {
+    "color": {
+      "video_bg": "surface_muted",
+      "subtitle_speaker": "brand",
+      "subtitle_text": "text_secondary",
+      "minutes_section_enabled": "brand",
+      "minutes_section_disabled": "text_tertiary",
+      "keypoint_highlight": "warning",
+      "panel_bg": "glass",
+      "panel_border": "glass_border"
+    },
+    "typography": {
+      "participant_label": { "token": "overline", "size": 12, "weight": "Regular" },
+      "subtitle_speaker": { "token": "caption", "size": 14, "weight": "Medium" },
+      "subtitle_text": { "token": "body", "size": 14, "weight": "Regular" },
+      "minutes_section": { "token": "caption", "size": 14, "weight": "Regular" }
+    },
+    "spacing": {
+      "video_gap": "space_sm",
+      "panel_padding": "space_md",
+      "subtitle_line_gap": "space_2xs"
+    },
+    "shape": {
+      "video_thumb": "radius_md",
+      "panel": "radius_md",
+      "minutes_toggle": "radius_full"
+    }
+  }
+}

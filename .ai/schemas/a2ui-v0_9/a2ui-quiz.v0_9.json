@@ -1,0 +1,174 @@
+[
+  {
+    "version": "v0.9.1",
+    "createSurface": {
+      "surfaceId": "quiz",
+      "catalogId": "https://a2ui.org/specification/v0_9_1/catalogs/basic/catalog.json"
+    }
+  },
+  {
+    "version": "v0.9.1",
+    "updateComponents": {
+      "surfaceId": "quiz",
+      "components": [
+        {
+          "id": "root",
+          "component": "Column",
+          "children": ["progress-row", "question-card", "options-column", "agent-panel", "stats-bar"]
+        },
+        {
+          "id": "progress-row",
+          "component": "Row",
+          "children": ["progress-text", "timer-text"]
+        },
+        {
+          "id": "progress-text",
+          "component": "Text",
+          "text": {"path": "/progress"},
+          "variant": "caption"
+        },
+        {
+          "id": "timer-text",
+          "component": "Text",
+          "text": {"path": "/timer"},
+          "variant": "subtitle"
+        },
+        {
+          "id": "question-card",
+          "component": "Card",
+          "children": ["question-text"]
+        },
+        {
+          "id": "question-text",
+          "component": "Text",
+          "text": {"path": "/question/text"},
+          "variant": "h3"
+        },
+        {
+          "id": "options-column",
+          "component": "Column",
+          "children": ["option-a", "option-b", "option-c", "option-d"]
+        },
+        {
+          "id": "option-a",
+          "component": "Button",
+          "child": "option-a-label",
+          "variant": "outline",
+          "action": {"event": {"name": "select_option_a"}}
+        },
+        {
+          "id": "option-a-label",
+          "component": "Text",
+          "text": {"path": "/question/options/0"},
+          "variant": "body"
+        },
+        {
+          "id": "option-b",
+          "component": "Button",
+          "child": "option-b-label",
+          "variant": "outline",
+          "action": {"event": {"name": "select_option_b"}}
+        },
+        {
+          "id": "option-b-label",
+          "component": "Text",
+          "text": {"path": "/question/options/1"},
+          "variant": "body"
+        },
+        {
+          "id": "option-c",
+          "component": "Button",
+          "child": "option-c-label",
+          "variant": "outline",
+          "action": {"event": {"name": "select_option_c"}}
+        },
+        {
+          "id": "option-c-label",
+          "component": "Text",
+          "text": {"path": "/question/options/2"},
+          "variant": "body"
+        },
+        {
+          "id": "option-d",
+          "component": "Button",
+          "child": "option-d-label",
+          "variant": "outline",
+          "action": {"event": {"name": "select_option_d"}}
+        },
+        {
+          "id": "option-d-label",
+          "component": "Text",
+          "text": {"path": "/question/options/3"},
+          "variant": "body"
+        },
+        {
+          "id": "agent-panel",
+          "component": "Card",
+          "children": ["agent-title", "agent-explanation"]
+        },
+        {
+          "id": "agent-title",
+          "component": "Text",
+          "text": "🤖 AI 解析",
+          "variant": "subtitle"
+        },
+        {
+          "id": "agent-explanation",
+          "component": "Text",
+          "text": {"path": "/agent/explanation"},
+          "variant": "body"
+        },
+        {
+          "id": "stats-bar",
+          "component": "Row",
+          "children": ["stats-answered", "stats-accuracy"]
+        },
+        {
+          "id": "stats-answered",
+          "component": "Text",
+          "text": {"path": "/stats/answered"},
+          "variant": "caption"
+        },
+        {
+          "id": "stats-accuracy",
+          "component": "Text",
+          "text": {"path": "/stats/accuracy"},
+          "variant": "caption"
+        }
+      ]
+    }
+  },
+  {
+    "version": "v0.9.1",
+    "updateDataModel": {
+      "surfaceId": "quiz",
+      "value": {
+        "progress": "第 3/10 题",
+        "timer": "⏱️ 30s",
+        "question": {
+          "text": "若三角形 ABC 中，AB=5, BC=7, ∠B=60°，求 AC 的长度？",
+          "options": [
+            "A. 约 5.24 cm",
+            "B. 约 6.24 cm",
+            "C. 约 7.24 cm",
+            "D. 约 8.24 cm"
+          ]
+        },
+        "agent": {
+          "explanation": "使用余弦定理: AC² = AB² + BC² - 2·AB·BC·cos(B) = 25 + 49 - 70·cos(60°) ≈ 6.24 cm"
+        },
+        "stats": {
+          "answered": "📊 已答: 2/10",
+          "accuracy": "✅ 正确率: 50%"
+        }
+      }
+    }
+  },
+  {
+    "version": "v0.9.1",
+    "beginRendering": {
+      "surfaceId": "quiz",
+      "root": "root"
+    }
+  }
+]

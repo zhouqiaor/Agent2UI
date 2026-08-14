@@ -1,0 +1,196 @@
+[
+  {
+    "version": "v0.9.1",
+    "createSurface": {
+      "surfaceId": "whiteboard",
+      "catalogId": "https://a2ui.org/specification/v0_9_1/catalogs/basic/catalog.json"
+    }
+  },
+  {
+    "version": "v0.9.1",
+    "updateComponents": {
+      "surfaceId": "whiteboard",
+      "components": [
+        {
+          "id": "root",
+          "component": "Column",
+          "children": ["canvas-area", "toolbar-row", "agent-panel"]
+        },
+        {
+          "id": "canvas-area",
+          "component": "Card",
+          "children": ["canvas-title", "canvas-content", "recognition-panel"]
+        },
+        {
+          "id": "canvas-title",
+          "component": "Text",
+          "text": "📐 白板画布",
+          "variant": "subtitle"
+        },
+        {
+          "id": "canvas-content",
+          "component": "Column",
+          "children": ["shape-triangle", "shape-formula", "shape-circle"]
+        },
+        {
+          "id": "shape-triangle",
+          "component": "Card",
+          "children": ["shape-triangle-label"]
+        },
+        {
+          "id": "shape-triangle-label",
+          "component": "Text",
+          "text": "📐 三角形 (手绘)",
+          "variant": "body"
+        },
+        {
+          "id": "shape-formula",
+          "component": "Card",
+          "children": ["shape-formula-label"]
+        },
+        {
+          "id": "shape-formula-label",
+          "component": "Text",
+          "text": "✏️ 公式: a²+b²=c²",
+          "variant": "body"
+        },
+        {
+          "id": "shape-circle",
+          "component": "Card",
+          "children": ["shape-circle-label"]
+        },
+        {
+          "id": "shape-circle-label",
+          "component": "Text",
+          "text": "⭕ 圆形 (手绘)",
+          "variant": "body"
+        },
+        {
+          "id": "recognition-panel",
+          "component": "Card",
+          "children": ["recognition-title", "recognition-result"]
+        },
+        {
+          "id": "recognition-title",
+          "component": "Text",
+          "text": "🤖 A2UI 智能识别",
+          "variant": "subtitle"
+        },
+        {
+          "id": "recognition-result",
+          "component": "Text",
+          "text": {"path": "/recognition/result"},
+          "variant": "body"
+        },
+        {
+          "id": "toolbar-row",
+          "component": "Row",
+          "children": ["tool-pen", "tool-ruler", "tool-a2ui", "tool-voice", "tool-export"]
+        },
+        {
+          "id": "tool-pen",
+          "component": "Button",
+          "child": "tool-pen-label",
+          "variant": "outline",
+          "action": {"event": {"name": "select_tool_pen"}}
+        },
+        {
+          "id": "tool-pen-label",
+          "component": "Text",
+          "text": "🖊 画笔",
+          "variant": "body"
+        },
+        {
+          "id": "tool-ruler",
+          "component": "Button",
+          "child": "tool-ruler-label",
+          "variant": "outline",
+          "action": {"event": {"name": "select_tool_ruler"}}
+        },
+        {
+          "id": "tool-ruler-label",
+          "component": "Text",
+          "text": "📏 直尺",
+          "variant": "body"
+        },
+        {
+          "id": "tool-a2ui",
+          "component": "Button",
+          "child": "tool-a2ui-label",
+          "variant": "primary",
+          "action": {"event": {"name": "recognize_shape"}}
+        },
+        {
+          "id": "tool-a2ui-label",
+          "component": "Text",
+          "text": "🤖 A2UI 识别",
+          "variant": "body"
+        },
+        {
+          "id": "tool-voice",
+          "component": "Button",
+          "child": "tool-voice-label",
+          "variant": "outline",
+          "action": {"event": {"name": "voice_to_text"}}
+        },
+        {
+          "id": "tool-voice-label",
+          "component": "Text",
+          "text": "💬 语音转文字",
+          "variant": "body"
+        },
+        {
+          "id": "tool-export",
+          "component": "Button",
+          "child": "tool-export-label",
+          "variant": "outline",
+          "action": {"event": {"name": "export_whiteboard"}}
+        },
+        {
+          "id": "tool-export-label",
+          "component": "Text",
+          "text": "📤 导出",
+          "variant": "body"
+        },
+        {
+          "id": "agent-panel",
+          "component": "Card",
+          "children": ["agent-title", "agent-message"]
+        },
+        {
+          "id": "agent-title",
+          "component": "Text",
+          "text": "🤖 A2UI 助手",
+          "variant": "subtitle"
+        },
+        {
+          "id": "agent-message",
+          "component": "Text",
+          "text": {"path": "/agent/message"},
+          "variant": "body"
+        }
+      ]
+    }
+  },
+  {
+    "version": "v0.9.1",
+    "updateDataModel": {
+      "surfaceId": "whiteboard",
+      "value": {
+        "recognition": {
+          "result": "已识别: 三角形 (置信度 95%) · 建议: 自动生成标准三角形图形"
+        },
+        "agent": {
+          "message": "点击 🤖 A2UI 按钮体验智能识别与美化"
+        }
+      }
+    }
+  },
+  {
+    "version": "v0.9.1",
+    "beginRendering": {
+      "surfaceId": "whiteboard",
+      "root": "root"
+    }
+  }
+]

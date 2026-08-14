@@ -1,0 +1,264 @@
+[
+  {
+    "version": "v0.9.1",
+    "createSurface": {
+      "surfaceId": "attendance",
+      "catalogId": "https://a2ui.org/specification/v0_9_1/catalogs/basic/catalog.json"
+    }
+  },
+  {
+    "version": "v0.9.1",
+    "updateComponents": {
+      "surfaceId": "attendance",
+      "components": [
+        {
+          "id": "root",
+          "component": "Column",
+          "children": ["header-stats", "action-bar", "lists", "agent-panel"]
+        },
+        {
+          "id": "header-stats",
+          "component": "Row",
+          "children": ["stat-total", "stat-present", "stat-absent"]
+        },
+        {
+          "id": "stat-total",
+          "component": "Card",
+          "children": ["stat-total-icon", "stat-total-value", "stat-total-label"]
+        },
+        {
+          "id": "stat-total-icon",
+          "component": "Text",
+          "text": "👥",
+          "variant": "body"
+        },
+        {
+          "id": "stat-total-value",
+          "component": "Text",
+          "text": {"path": "/stats/total"},
+          "variant": "h2"
+        },
+        {
+          "id": "stat-total-label",
+          "component": "Text",
+          "text": "应到总人数",
+          "variant": "caption"
+        },
+        {
+          "id": "stat-present",
+          "component": "Card",
+          "children": ["stat-present-icon", "stat-present-value", "stat-present-label"]
+        },
+        {
+          "id": "stat-present-icon",
+          "component": "Text",
+          "text": "✅",
+          "variant": "body"
+        },
+        {
+          "id": "stat-present-value",
+          "component": "Text",
+          "text": {"path": "/stats/present"},
+          "variant": "h2"
+        },
+        {
+          "id": "stat-present-label",
+          "component": "Text",
+          "text": "已签到",
+          "variant": "caption"
+        },
+        {
+          "id": "stat-absent",
+          "component": "Card",
+          "children": ["stat-absent-icon", "stat-absent-value", "stat-absent-label"]
+        },
+        {
+          "id": "stat-absent-icon",
+          "component": "Text",
+          "text": "⏳",
+          "variant": "body"
+        },
+        {
+          "id": "stat-absent-value",
+          "component": "Text",
+          "text": {"path": "/stats/absent"},
+          "variant": "h2"
+        },
+        {
+          "id": "stat-absent-label",
+          "component": "Text",
+          "text": "未签到",
+          "variant": "caption"
+        },
+        {
+          "id": "action-bar",
+          "component": "Row",
+          "children": ["btn-import", "btn-qr", "btn-add", "btn-all-present", "btn-reset"]
+        },
+        {
+          "id": "btn-import",
+          "component": "Button",
+          "child": "btn-import-label",
+          "variant": "primary",
+          "action": {"event": {"name": "import_name_list"}}
+        },
+        {
+          "id": "btn-import-label",
+          "component": "Text",
+          "text": "📥 导入名单",
+          "variant": "body"
+        },
+        {
+          "id": "btn-qr",
+          "component": "Button",
+          "child": "btn-qr-label",
+          "variant": "secondary",
+          "action": {"event": {"name": "scan_qr_checkin"}}
+        },
+        {
+          "id": "btn-qr-label",
+          "component": "Text",
+          "text": "📱 扫码签到",
+          "variant": "body"
+        },
+        {
+          "id": "btn-add",
+          "component": "Button",
+          "child": "btn-add-label",
+          "variant": "outline",
+          "action": {"event": {"name": "add_person"}}
+        },
+        {
+          "id": "btn-add-label",
+          "component": "Text",
+          "text": "➕ 添加人员",
+          "variant": "body"
+        },
+        {
+          "id": "btn-all-present",
+          "component": "Button",
+          "child": "btn-all-present-label",
+          "variant": "outline",
+          "action": {"event": {"name": "mark_all_present"}}
+        },
+        {
+          "id": "btn-all-present-label",
+          "component": "Text",
+          "text": "✓ 全员已到",
+          "variant": "body"
+        },
+        {
+          "id": "btn-reset",
+          "component": "Button",
+          "child": "btn-reset-label",
+          "variant": "outline",
+          "action": {"event": {"name": "reset_attendance"}}
+        },
+        {
+          "id": "btn-reset-label",
+          "component": "Text",
+          "text": "↻ 重置",
+          "variant": "body"
+        },
+        {
+          "id": "lists",
+          "component": "Row",
+          "children": ["list-present", "list-absent"]
+        },
+        {
+          "id": "list-present",
+          "component": "Column",
+          "children": ["list-present-title", "list-present-items"]
+        },
+        {
+          "id": "list-present-title",
+          "component": "Text",
+          "text": "已签到人员",
+          "variant": "subtitle"
+        },
+        {
+          "id": "list-present-items",
+          "component": "Column",
+          "children": {"path": "/people-present", "componentId": "person-item-template"}
+        },
+        {
+          "id": "list-absent",
+          "component": "Column",
+          "children": ["list-absent-title", "list-absent-items"]
+        },
+        {
+          "id": "list-absent-title",
+          "component": "Text",
+          "text": "未签到人员",
+          "variant": "subtitle"
+        },
+        {
+          "id": "list-absent-items",
+          "component": "Column",
+          "children": {"path": "/people-absent", "componentId": "person-item-template"}
+        },
+        {
+          "id": "person-item-template",
+          "component": "Card",
+          "children": ["person-name"]
+        },
+        {
+          "id": "person-name",
+          "component": "Text",
+          "text": {"path": "/name"},
+          "variant": "body"
+        },
+        {
+          "id": "agent-panel",
+          "component": "Card",
+          "children": ["agent-title", "agent-message"]
+        },
+        {
+          "id": "agent-title",
+          "component": "Text",
+          "text": "🤖 AI 助教",
+          "variant": "subtitle"
+        },
+        {
+          "id": "agent-message",
+          "component": "Text",
+          "text": {"path": "/agent/message"},
+          "variant": "body"
+        }
+      ]
+    }
+  },
+  {
+    "version": "v0.9.1",
+    "updateDataModel": {
+      "surfaceId": "attendance",
+      "value": {
+        "stats": {
+          "total": 45,
+          "present": 30,
+          "absent": 15
+        },
+        "people-present": [
+          {"id": "p1", "name": "张老师", "status": "present"},
+          {"id": "p2", "name": "李同学", "status": "present"},
+          {"id": "p3", "name": "王同学", "status": "present"}
+        ],
+        "people-absent": [
+          {"id": "p4", "name": "赵同学", "status": "absent"},
+          {"id": "p5", "name": "孙同学", "status": "absent"}
+        ],
+        "agent": {
+          "status": "idle",
+          "message": "就绪 · 点击人员姓名快速签到"
+        }
+      }
+    }
+  },
+  {
+    "version": "v0.9.1",
+    "beginRendering": {
+      "surfaceId": "attendance",
+      "root": "root"
+    }
+  }
+]

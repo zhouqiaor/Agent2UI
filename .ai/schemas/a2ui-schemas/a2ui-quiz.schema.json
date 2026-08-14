@@ -1,0 +1,226 @@
+{
+  "$schema": "https://a2ui.dev/schema/v1",
+  "meta": {
+    "scene_id": "quiz",
+    "scene_name": "课堂答题",
+    "version": "1.0.0",
+    "source": "agent",
+    "harmony_version": "1.2.0",
+    "description": "教育场景：课堂互动答题，支持单选/多选/判断"
+  },
+  "intent": {
+    "primary": "展示问题、收集答案、自动判分并由 Agent 提供解析",
+    "actions": [
+      "display_question",
+      "submit_answer",
+      "next_question",
+      "show_explanation",
+      "get_agent_help"
+    ]
+  },
+  "data_model": {
+    "state": {
+      "question_index": "number",
+      "total_questions": "number",
+      "current_question": "Question",
+      "selected_option_ids": "string[]",
+      "is_correct": "boolean | null",
+      "time_remaining": "number",
+      "stats": "QuizStats",
+      "agent_status": "idle | listening | processing | done",
+      "agent_explanation": "string"
+    },
+    "entities": {
+      "Question": {
+        "id": "string",
+        "type": "single | multiple | boolean",
+        "text": "string",
+        "options": "QuizOption[]",
+        "correct_option_ids": "string[]",
+        "explanation": "string",
+        "category": "string"
+      },
+      "QuizOption": {
+        "id": "string",
+        "letter": "A | B | C | D",
+        "text": "string",
+        "is_correct": "boolean"
+      },
+      "QuizStats": {
+        "total_answered": "number",
+        "correct_count": "number",
+        "accuracy": "number (0-1)",
+        "score": "number"
+      }
+    }
+  },
+  "ui_schema": {
+    "layout": {
+      "type": "column",
+      "spacing": "space_md",
+      "sections": [
+        {
+          "id": "header",
+          "type": "row",
+          "alignment": "center_between",
+          "children": ["progress", "timer"]
+        },
+        {
+          "id": "question",
+          "type": "card",
+          "data_bind": "state.current_question",
+          "children": ["question_text"]
+        },
+        {
+          "id": "options",
+          "type": "column",
+          "spacing": "space_sm",
+          "children": ["option_a", "option_b", "option_c", "option_d"]
+        },
+        {
+          "id": "agent_panel",
+          "type": "card",
+          "children": ["agent_card"]
+        },
+        {
+          "id": "stats_bar",
+          "type": "row",
+          "alignment": "center",
+          "data_bind": "state.stats",
+          "children": ["stat_answered", "stat_accuracy"]
+        }
+      ]
+    },
+    "components": [
+      {
+        "id": "progress",
+        "type": "TextLabel",
+        "data_bind": "第 {question_index}/{total_questions} 题",
+        "style": "caption",
+        "color_token": "text_tertiary"
+      },
+      {
+        "id": "timer",
+        "type": "TimerDisplay",
+        "data_bind": "state.time_remaining",
+        "unit": "s",
+        "color_token": "warning",
+        "font_weight": "Medium"
+      },
+      {
+        "id": "question_text",
+        "type": "QuestionText",
+        "data_bind": "state.current_question.text",
+        "style": "subtitle",
+        "font_size": 18
+      },
+      {
+        "id": "option_a",
+        "type": "QuizOption",
+        "data_bind": "state.current_question.options[0]",
+        "selected_bind": "state.selected_option_ids",
+        "on_select": "submit_answer",
+        "status_bind": "state.is_correct"
+      },
+      {
+        "id": "option_b",
+        "type": "QuizOption",
+        "data_bind": "state.current_question.options[1]",
+        "selected_bind": "state.selected_option_ids",
+        "on_select": "submit_answer",
+        "status_bind": "state.is_correct"
+      },
+      {
+        "id": "option_c",
+        "type": "QuizOption",
+        "data_bind": "state.current_question.options[2]",
+        "selected_bind": "state.selected_option_ids",
+        "on_select": "submit_answer",
+        "status_bind": "state.is_correct"
+      },
+      {
+        "id": "option_d",
+        "type": "QuizOption",
+        "data_bind": "state.current_question.options[3]",
+        "selected_bind": "state.selected_option_ids",
+        "on_select": "submit_answer",
+        "status_bind": "state.is_correct",
+        "conditional": "state.current_question.options.length >= 4"
+      },
+      {
+        "id": "agent_card",
+        "type": "AgentCard",
+        "data_bind": "state.agent_status + state.agent_explanation",
+        "auto_explain": true
+      },
+      {
+        "id": "stat_answered",
+        "type": "TextLabel",
+        "data_bind": "📊 已答: {total_answered}/{total_questions}",
+        "style": "caption"
+      },
+      {
+        "id": "stat_accuracy",
+        "type": "TextLabel",
+        "data_bind": "✅ 正确率: {accuracy}%",
+        "style": "caption",
+        "color_token": "success"
+      }
+    ]
+  },
+  "interaction_protocol": {
+    "states": [
+      { "name": "displaying", "description": "展示题目，等待作答" },
+      { "name": "submitting", "description": "正在提交答案" },
+      { "name": "explaining", "description": "Agent 正在解析" },
+      { "name": "transitioning", "description": "切换下一题" }
+    ],
+    "events": [
+      { "name": "onOptionSelect", "payload": { "optionId": "string" } },
+      { "name": "onSubmit", "payload": { "selectedIds": "string[]" } },
+      { "name": "onNext", "payload": {} },
+      { "name": "onTimerExpire", "payload": {} }
+    ],
+    "actions": [
+      {
+        "name": "submitAnswer",
+        "trigger": "onSubmit",
+        "effect": "验证答案正确性，更新统计，触发 Agent 解析",
+        "transitions": ["displaying → submitting → explaining → displaying"]
+      },
+      {
+        "name": "nextQuestion",
+        "trigger": "onNext",
+        "effect": "加载下一道题，重置选择和计时器",
+        "transitions": ["displaying → transitioning → displaying"]
+      }
+    ]
+  },
+  "design_tokens": {
+    "color": {
+      "question_bg": "surface_muted",
+      "option_bg": "surface_muted",
+      "option_selected": "brand_surface",
+      "option_selected_border": "brand",
+      "option_correct": "success_surface",
+      "option_correct_border": "success",
+      "option_wrong": "danger",
+      "timer": "warning"
+    },
+    "typography": {
+      "question": { "token": "subtitle", "size": 18, "weight": "Medium" },
+      "option": { "token": "body", "size": 16, "weight": "Regular" },
+      "option_letter": { "token": "caption", "size": 14, "weight": "Medium" }
+    },
+    "spacing": {
+      "question_padding": "space_lg",
+      "option_padding": "space_md",
+      "option_gap": "space_sm"
+    },
+    "shape": {
+      "question": "radius_md",
+      "option": "radius_md",
+      "option_letter": "radius_full"
+    }
+  }
+}

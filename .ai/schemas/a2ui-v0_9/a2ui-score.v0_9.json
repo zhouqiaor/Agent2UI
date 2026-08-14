@@ -1,0 +1,322 @@
+[
+  {
+    "version": "v0.9.1",
+    "createSurface": {
+      "surfaceId": "score",
+      "catalogId": "https://a2ui.org/specification/v0_9_1/catalogs/basic/catalog.json"
+    }
+  },
+  {
+    "version": "v0.9.1",
+    "updateComponents": {
+      "surfaceId": "score",
+      "components": [
+        {
+          "id": "root",
+          "component": "Column",
+          "children": ["title-row", "score-grid", "action-row", "agent-panel"]
+        },
+        {
+          "id": "title-row",
+          "component": "Text",
+          "text": {"path": "/title"},
+          "variant": "h2"
+        },
+        {
+          "id": "score-grid",
+          "component": "Row",
+          "children": ["group-a", "group-b", "group-c", "group-d"]
+        },
+        {
+          "id": "group-a",
+          "component": "Card",
+          "children": ["group-a-rank", "group-a-name", "group-a-score", "group-a-actions"]
+        },
+        {
+          "id": "group-a-rank",
+          "component": "Text",
+          "text": {"path": "/groups/0/rank"},
+          "variant": "h3"
+        },
+        {
+          "id": "group-a-name",
+          "component": "Text",
+          "text": {"path": "/groups/0/name"},
+          "variant": "subtitle"
+        },
+        {
+          "id": "group-a-score",
+          "component": "Text",
+          "text": {"path": "/groups/0/score"},
+          "variant": "h1"
+        },
+        {
+          "id": "group-a-actions",
+          "component": "Row",
+          "children": ["group-a-add", "group-a-sub"]
+        },
+        {
+          "id": "group-a-add",
+          "component": "Button",
+          "child": "group-a-add-label",
+          "variant": "primary",
+          "action": {"event": {"name": "add_score_group_a"}}
+        },
+        {
+          "id": "group-a-add-label",
+          "component": "Text",
+          "text": "+1",
+          "variant": "body"
+        },
+        {
+          "id": "group-a-sub",
+          "component": "Button",
+          "child": "group-a-sub-label",
+          "variant": "outline",
+          "action": {"event": {"name": "sub_score_group_a"}}
+        },
+        {
+          "id": "group-a-sub-label",
+          "component": "Text",
+          "text": "-1",
+          "variant": "body"
+        },
+        {
+          "id": "group-b",
+          "component": "Card",
+          "children": ["group-b-rank", "group-b-name", "group-b-score", "group-b-actions"]
+        },
+        {
+          "id": "group-b-rank",
+          "component": "Text",
+          "text": {"path": "/groups/1/rank"},
+          "variant": "h3"
+        },
+        {
+          "id": "group-b-name",
+          "component": "Text",
+          "text": {"path": "/groups/1/name"},
+          "variant": "subtitle"
+        },
+        {
+          "id": "group-b-score",
+          "component": "Text",
+          "text": {"path": "/groups/1/score"},
+          "variant": "h1"
+        },
+        {
+          "id": "group-b-actions",
+          "component": "Row",
+          "children": ["group-b-add", "group-b-sub"]
+        },
+        {
+          "id": "group-b-add",
+          "component": "Button",
+          "child": "group-b-add-label",
+          "variant": "primary",
+          "action": {"event": {"name": "add_score_group_b"}}
+        },
+        {
+          "id": "group-b-add-label",
+          "component": "Text",
+          "text": "+1",
+          "variant": "body"
+        },
+        {
+          "id": "group-b-sub",
+          "component": "Button",
+          "child": "group-b-sub-label",
+          "variant": "outline",
+          "action": {"event": {"name": "sub_score_group_b"}}
+        },
+        {
+          "id": "group-b-sub-label",
+          "component": "Text",
+          "text": "-1",
+          "variant": "body"
+        },
+        {
+          "id": "group-c",
+          "component": "Card",
+          "children": ["group-c-rank", "group-c-name", "group-c-score", "group-c-actions"]
+        },
+        {
+          "id": "group-c-rank",
+          "component": "Text",
+          "text": {"path": "/groups/2/rank"},
+          "variant": "h3"
+        },
+        {
+          "id": "group-c-name",
+          "component": "Text",
+          "text": {"path": "/groups/2/name"},
+          "variant": "subtitle"
+        },
+        {
+          "id": "group-c-score",
+          "component": "Text",
+          "text": {"path": "/groups/2/score"},
+          "variant": "h1"
+        },
+        {
+          "id": "group-c-actions",
+          "component": "Row",
+          "children": ["group-c-add", "group-c-sub"]
+        },
+        {
+          "id": "group-c-add",
+          "component": "Button",
+          "child": "group-c-add-label",
+          "variant": "primary",
+          "action": {"event": {"name": "add_score_group_c"}}
+        },
+        {
+          "id": "group-c-add-label",
+          "component": "Text",
+          "text": "+1",
+          "variant": "body"
+        },
+        {
+          "id": "group-c-sub",
+          "component": "Button",
+          "child": "group-c-sub-label",
+          "variant": "outline",
+          "action": {"event": {"name": "sub_score_group_c"}}
+        },
+        {
+          "id": "group-c-sub-label",
+          "component": "Text",
+          "text": "-1",
+          "variant": "body"
+        },
+        {
+          "id": "group-d",
+          "component": "Card",
+          "children": ["group-d-rank", "group-d-name", "group-d-score", "group-d-actions"]
+        },
+        {
+          "id": "group-d-rank",
+          "component": "Text",
+          "text": {"path": "/groups/3/rank"},
+          "variant": "h3"
+        },
+        {
+          "id": "group-d-name",
+          "component": "Text",
+          "text": {"path": "/groups/3/name"},
+          "variant": "subtitle"
+        },
+        {
+          "id": "group-d-score",
+          "component": "Text",
+          "text": {"path": "/groups/3/score"},
+          "variant": "h1"
+        },
+        {
+          "id": "group-d-actions",
+          "component": "Row",
+          "children": ["group-d-add", "group-d-sub"]
+        },
+        {
+          "id": "group-d-add",
+          "component": "Button",
+          "child": "group-d-add-label",
+          "variant": "primary",
+          "action": {"event": {"name": "add_score_group_d"}}
+        },
+        {
+          "id": "group-d-add-label",
+          "component": "Text",
+          "text": "+1",
+          "variant": "body"
+        },
+        {
+          "id": "group-d-sub",
+          "component": "Button",
+          "child": "group-d-sub-label",
+          "variant": "outline",
+          "action": {"event": {"name": "sub_score_group_d"}}
+        },
+        {
+          "id": "group-d-sub-label",
+          "component": "Text",
+          "text": "-1",
+          "variant": "body"
+        },
+        {
+          "id": "action-row",
+          "component": "Row",
+          "children": ["btn-export", "btn-reset"]
+        },
+        {
+          "id": "btn-export",
+          "component": "Button",
+          "child": "btn-export-label",
+          "variant": "outline",
+          "action": {"event": {"name": "export_board"}}
+        },
+        {
+          "id": "btn-export-label",
+          "component": "Text",
+          "text": "📋 导出计分板",
+          "variant": "body"
+        },
+        {
+          "id": "btn-reset",
+          "component": "Button",
+          "child": "btn-reset-label",
+          "variant": "outline",
+          "action": {"event": {"name": "reset_board"}}
+        },
+        {
+          "id": "btn-reset-label",
+          "component": "Text",
+          "text": "↻ 重置",
+          "variant": "body"
+        },
+        {
+          "id": "agent-panel",
+          "component": "Card",
+          "children": ["agent-title", "agent-message"]
+        },
+        {
+          "id": "agent-title",
+          "component": "Text",
+          "text": "🤖 AI 助手",
+          "variant": "subtitle"
+        },
+        {
+          "id": "agent-message",
+          "component": "Text",
+          "text": {"path": "/agent/message"},
+          "variant": "body"
+        }
+      ]
+    }
+  },
+  {
+    "version": "v0.9.1",
+    "updateDataModel": {
+      "surfaceId": "score",
+      "value": {
+        "title": "📊 分组计分板 · 知识竞赛",
+        "groups": [
+          {"rank": "🥇 1", "name": "第一组", "score": 18},
+          {"rank": "🥈 2", "name": "第二组", "score": 15},
+          {"rank": "🥉 3", "name": "第三组", "score": 12},
+          {"rank": "4", "name": "第四组", "score": 8}
+        ],
+        "agent": {
+          "message": "第一组领先 · 可点击 +1/-1 调整得分"
+        }
+      }
+    }
+  },
+  {
+    "version": "v0.9.1",
+    "beginRendering": {
+      "surfaceId": "score",
+      "root": "root"
+    }
+  }
+]
