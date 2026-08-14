@@ -1,0 +1,1919 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A2UI 体验沙盒 · IdeaHub 大屏交互原型</title>
+<style>
+/* =====================================================================
+   HarmonyOS 设计令牌（来源: design-tokens.json v1.2.0）
+   品牌色 #007DFF · 4vp 间距基数 · 柔和阴影 · 沉浸光感
+   ===================================================================== */
+:root {
+  --brand: #007DFF;
+  --brand-pressed: #0069D6;
+  --brand-surface: #E8F3FF;
+  --success: #2E7D32;
+  --success-surface: #E6F4EA;
+  --warning: #F5A623;
+  --warning-surface: #FFF3D6;
+  --danger: #FF3B30;
+  --text-1: #181818;
+  --text-2: #666666;
+  --text-3: #999999;
+  --text-inv: #FFFFFF;
+  --surface: #FFFFFF;
+  --surface-muted: #F5F6F7;
+  --divider: #E8EAED;
+  --bg: #F5F6F7;
+  --shadow-card: 0 2px 8px rgba(0,0,0,0.12);
+  --shadow-elev: 0 6px 16px rgba(0,0,0,0.16);
+  --glass: rgba(255,255,255,0.72);
+  --glass-border: rgba(255,255,255,0.55);
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-full: 999px;
+  --font: "HarmonyOS Sans","PingFang SC","Microsoft YaHei",system-ui,-apple-system,sans-serif;
+}
+
+html[data-theme="dark"] {
+  --brand: #3D9BFF;
+  --brand-pressed: #2B82E6;
+  --brand-surface: #123A5C;
+  --success: #4CAF50;
+  --success-surface: #1E3524;
+  --warning: #FFB84D;
+  --warning-surface: #3A3216;
+  --danger: #FF6B61;
+  --text-1: #E6E6E6;
+  --text-2: #B0B3B8;
+  --text-3: #8A8D93;
+  --text-inv: #1A1A1A;
+  --surface: #1F1F22;
+  --surface-muted: #2A2A2E;
+  --divider: #3A3A40;
+  --bg: #1F1F22;
+  --shadow-card: 0 2px 8px rgba(0,0,0,0.50);
+  --shadow-elev: 0 6px 16px rgba(0,0,0,0.60);
+  --glass: rgba(31,31,34,0.78);
+  --glass-border: rgba(255,255,255,0.10);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: var(--font);
+  color: var(--text-1);
+  background: var(--bg);
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.5;
+}
+
+/* ============ 顶栏 ============ */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  background: var(--glass);
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  border-bottom: 1px solid var(--glass-border);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.topbar h1 { font-size: 22px; font-weight: 500; }
+.topbar .sub { font-size: 14px; color: var(--text-3); margin-top: 4px; }
+.topbar .right { display: flex; gap: 12px; align-items: center; }
+
+/* ============ 场景切换器 ============ */
+.scene-switcher {
+  display: flex;
+  gap: 8px;
+  padding: 12px 24px;
+  background: var(--glass);
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  border-bottom: 1px solid var(--glass-border);
+  overflow-x: auto;
+  flex-wrap: wrap;
+}
+.scene-btn {
+  padding: 8px 16px;
+  border: 1px solid var(--divider);
+  background: transparent;
+  color: var(--text-2);
+  border-radius: var(--r-full);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 400;
+  white-space: nowrap;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font);
+}
+.scene-btn:hover { border-color: var(--brand); color: var(--text-1); }
+.scene-btn.active { background: var(--brand); color: #fff; border-color: var(--brand); }
+.scene-btn .tag {
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: var(--r-full);
+  background: var(--brand-surface);
+  color: var(--brand);
+}
+.scene-btn.active .tag { background: rgba(255,255,255,0.2); color: #fff; }
+
+/* ============ 主舞台 ============ */
+.stage {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  gap: 16px;
+}
+
+.scene-content { display: none; width: 100%; max-width: 1080px; }
+.scene-content.active { display: block; animation: fadeIn 0.3s cubic-bezier(0.4,0,0.2,1); }
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes pulse-ring { 0% { transform: scale(0.9); opacity: 1; } 100% { transform: scale(1.4); opacity: 0; } }
+@keyframes wave { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(2); } }
+
+/* ============ 通用卡片 ============ */
+.section {
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  padding: 24px;
+  box-shadow: var(--shadow-card);
+  position: relative;
+  overflow: hidden;
+}
+
+/* ============ Counter Scene (Attendance) ============ */
+.counter-screen {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px;
+}
+.attendance-stats {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+.stat-card {
+  flex: 1;
+  max-width: 140px;
+  padding: 16px;
+  background: var(--surface-muted);
+  border-radius: var(--r-md);
+  text-align: center;
+}
+.stat-card .stat-num {
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1;
+}
+.stat-card .stat-label {
+  font-size: 14px;
+  color: var(--text-3);
+  margin-top: 4px;
+}
+.stat-card.total .stat-num { color: var(--text-1); }
+.stat-card.present .stat-num { color: var(--success); }
+.stat-card.absent .stat-num { color: var(--warning); }
+
+.attendance-controls {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.import-panel {
+  background: var(--surface-muted);
+  border-radius: var(--r-md);
+  padding: 16px;
+  display: none;
+}
+.import-panel.show { display: block; animation: fadeIn 0.2s cubic-bezier(0.4,0,0.2,1); }
+.import-panel textarea {
+  width: 100%;
+  min-height: 80px;
+  padding: 12px;
+  background: var(--surface);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-md);
+  color: var(--text-1);
+  font-size: 14px;
+  font-family: var(--font);
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.15s;
+  margin-bottom: 12px;
+}
+.import-panel textarea:focus { border-color: var(--brand); }
+.import-panel .hint {
+  font-size: 12px;
+  color: var(--text-3);
+  margin-bottom: 12px;
+}
+
+.attendance-lists {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.list-section {
+  background: var(--surface-muted);
+  border-radius: var(--r-md);
+  padding: 16px;
+}
+.list-title {
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.list-title .count {
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: var(--r-full);
+  background: var(--surface);
+  color: var(--text-3);
+}
+.list-section.present .list-title .count { background: var(--success-surface); color: var(--success); }
+.list-section.absent .list-title .count { background: var(--warning-surface); color: var(--warning); }
+
+.person-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+.person-item {
+  padding: 12px 16px;
+  background: var(--surface);
+  border-radius: var(--r-md);
+  border: 1px solid var(--divider);
+  cursor: pointer;
+  transition: all 0.15s cubic-bezier(0.4,0,0.2,1);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.person-item:hover { border-color: var(--brand); transform: translateX(2px); }
+.person-item .name {
+  font-size: 14px;
+  font-weight: 400;
+}
+.person-item .status-icon { font-size: 16px; }
+.person-item.present { border-color: var(--success); background: var(--success-surface); }
+.person-item.present .name { color: var(--success); font-weight: 500; }
+.person-item.absent { border-color: var(--warning); }
+.person-item.absent .name { color: var(--text-1); }
+
+.empty-state {
+  text-align: center;
+  padding: 24px;
+  color: var(--text-3);
+}
+.empty-state .ic { font-size: 32px; margin-bottom: 8px; }
+.empty-state .text { font-size: 14px; }
+
+/* ============ QR Code Check-in ============ */
+.qr-checkin-panel {
+  position: fixed;
+  top: 50%;
+  right: 24px;
+  transform: translateY(-50%);
+  width: 280px;
+  background: var(--glass);
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  border-radius: var(--r-lg);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-elev);
+  padding: 20px;
+  z-index: 100;
+  display: none;
+}
+.qr-checkin-panel.show { display: block; animation: slideIn 0.3s cubic-bezier(0.4,0,0.2,1); }
+.qr-checkin-panel .qr-title {
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--text-1);
+  margin-bottom: 16px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.qr-container {
+  width: 200px;
+  height: 200px;
+  margin: 0 auto 16px;
+  background: var(--surface);
+  border-radius: var(--r-md);
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+.qr-container svg { width: 100%; height: 100%; }
+.qr-hint {
+  font-size: 14px;
+  color: var(--text-3);
+  text-align: center;
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+.qr-timer {
+  font-size: 12px;
+  color: var(--warning);
+  text-align: center;
+  margin-bottom: 12px;
+}
+.qr-checkin-panel .qr-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+/* Photo Wall / Mosaic Effect */
+.photo-wall-container {
+  margin-top: 16px;
+  background: var(--surface-muted);
+  border-radius: var(--r-lg);
+  padding: 24px;
+  text-align: center;
+}
+.photo-wall-title {
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.photo-wall {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 8px;
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 120px;
+}
+.photo-wall-cell {
+  aspect-ratio: 1;
+  background: var(--surface);
+  border-radius: var(--r-sm);
+  border: 1px solid var(--divider);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: var(--text-3);
+  transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+  overflow: hidden;
+}
+.photo-wall-cell.filled {
+  background: linear-gradient(135deg, var(--brand), var(--brand-pressed));
+  color: #fff;
+  font-weight: 500;
+  border-color: transparent;
+  animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.photo-wall-cell.filled.even {
+  background: linear-gradient(135deg, var(--brand), #66A3FF);
+}
+.photo-wall-cell.filled.odd {
+  background: linear-gradient(135deg, #0066CC, var(--brand));
+}
+@keyframes popIn {
+  0% { transform: scale(0); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* 扫码签到按钮 */
+.qr-trigger-btn {
+  background: linear-gradient(135deg, var(--brand), #66A3FF);
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: var(--r-full);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font);
+}
+.qr-trigger-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,125,255,0.3); }
+
+@keyframes slideIn {
+  0% { transform: translateY(-50%) translateX(120%); opacity: 0; }
+  100% { transform: translateY(-50%) translateX(0); opacity: 1; }
+}
+
+/* ============ Agent Status Card ============ */
+.agent-card {
+  width: 100%;
+  max-width: 720px;
+  padding: 16px 20px;
+  background: var(--glass);
+  backdrop-filter: blur(10px) saturate(120%);
+  -webkit-backdrop-filter: blur(10px) saturate(120%);
+  border-radius: var(--r-md);
+  border: 1px solid var(--divider);
+  transition: all 0.25s cubic-bezier(0.4,0,0.2,1);
+  min-height: 56px;
+}
+.agent-card.listening { border-color: var(--brand); background: var(--brand-surface); }
+.agent-card.processing { border-color: var(--warning); }
+.agent-card.done { border-color: var(--success); }
+.agent-card.idle { border-color: var(--divider); }
+
+.agent-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.agent-icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  border-radius: var(--r-full);
+  flex-shrink: 0;
+  transition: all 0.25s;
+}
+.agent-card.idle .agent-icon { background: var(--surface-muted); }
+.agent-card.listening .agent-icon {
+  background: var(--brand);
+  animation: pulse-ring 1.5s cubic-bezier(0.4,0,0.2,1) infinite;
+}
+.agent-card.processing .agent-icon { background: var(--warning); }
+.agent-card.done .agent-icon { background: var(--success); }
+
+.agent-wave {
+  display: flex;
+  gap: 3px;
+  align-items: flex-end;
+  height: 20px;
+}
+.agent-wave span {
+  width: 3px;
+  background: var(--brand);
+  border-radius: 2px;
+  animation: wave 0.8s ease infinite;
+}
+.agent-wave span:nth-child(1) { height: 10px; animation-delay: 0s; }
+.agent-wave span:nth-child(2) { height: 16px; animation-delay: 0.1s; }
+.agent-wave span:nth-child(3) { height: 12px; animation-delay: 0.2s; }
+.agent-wave span:nth-child(4) { height: 18px; animation-delay: 0.3s; }
+.agent-wave span:nth-child(5) { height: 14px; animation-delay: 0.4s; }
+
+.agent-text {
+  flex: 1;
+  font-size: 14px;
+  color: var(--text-1);
+  line-height: 1.5;
+}
+.agent-text .highlight { color: var(--brand); font-weight: 500; }
+.agent-card.done .agent-text .highlight { color: var(--success); }
+
+.agent-progress {
+  width: 160px;
+  height: 4px;
+  background: var(--surface-muted);
+  border-radius: var(--r-full);
+  overflow: hidden;
+}
+.agent-progress .bar {
+  height: 100%;
+  background: var(--warning);
+  border-radius: var(--r-full);
+  transition: width 0.3s cubic-bezier(0.4,0,0.2,1);
+}
+
+/* ============ Context Bar ============ */
+.context-bar {
+  display: flex;
+  gap: 16px;
+  padding: 16px 24px;
+  background: var(--surface-muted);
+  border-radius: var(--r-md);
+  font-size: 14px;
+  color: var(--text-3);
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.context-bar .stat { color: var(--brand); font-weight: 500; }
+
+/* ============ Vote Scene ============ */
+.vote-screen {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px;
+}
+.vote-topic {
+  text-align: center;
+  font-size: 22px;
+  font-weight: 500;
+  margin-bottom: 12px;
+}
+.vote-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+.vote-option {
+  padding: 24px 16px;
+  background: var(--surface-muted);
+  border-radius: var(--r-md);
+  border: 1px solid var(--divider);
+  cursor: pointer;
+  transition: all 0.15s cubic-bezier(0.4,0,0.2,1);
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.vote-option:hover { border-color: var(--brand); transform: translateY(-2px); }
+.vote-option .label { font-size: 16px; font-weight: 500; margin-bottom: 8px; }
+.vote-option .count { font-size: 30px; font-weight: 700; line-height: 1; }
+.vote-option.approve .count { color: var(--brand); }
+.vote-option.reject .count { color: var(--danger); }
+.vote-option.abstain .count { color: var(--text-3); }
+.vote-bar {
+  height: 4px;
+  background: var(--surface);
+  border-radius: var(--r-full);
+  overflow: hidden;
+  margin-top: 16px;
+}
+.vote-bar .fill {
+  height: 100%;
+  border-radius: var(--r-full);
+  transition: width 0.5s cubic-bezier(0.4,0,0.2,1);
+}
+.vote-option.approve .fill { background: var(--brand); }
+.vote-option.reject .fill { background: var(--danger); }
+.vote-option.abstain .fill { background: var(--text-3); }
+.vote-summary {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  padding: 16px 24px;
+  background: var(--surface-muted);
+  border-radius: var(--r-md);
+  font-size: 14px;
+  flex-wrap: wrap;
+}
+
+/* ============ Quiz Scene ============ */
+.quiz-screen {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px;
+}
+.quiz-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.quiz-progress { font-size: 14px; color: var(--text-3); }
+.quiz-timer { font-size: 14px; color: var(--warning); font-weight: 500; font-variant-numeric: tabular-nums; }
+.quiz-question {
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1.5;
+  padding: 24px;
+  background: var(--surface-muted);
+  border-radius: var(--r-md);
+}
+.quiz-options { display: flex; flex-direction: column; gap: 16px; }
+.quiz-option {
+  padding: 16px 20px;
+  background: var(--surface-muted);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-md);
+  cursor: pointer;
+  transition: all 0.15s cubic-bezier(0.4,0,0.2,1);
+  font-size: 16px;
+  text-align: left;
+  color: var(--text-1);
+  font-family: var(--font);
+}
+.quiz-option:hover { border-color: var(--brand); }
+.quiz-option.selected { border-color: var(--brand); background: var(--brand-surface); color: var(--brand); }
+.quiz-option.correct { border-color: var(--success); background: var(--success-surface); color: var(--success); }
+.quiz-option.wrong { border-color: var(--danger); }
+.quiz-option .letter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--r-full);
+  background: var(--surface);
+  margin-right: 12px;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+/* ============ Score Board ============ */
+.score-screen {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px;
+}
+.score-header { text-align: center; font-size: 22px; font-weight: 500; }
+.score-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+.score-card {
+  padding: 16px 12px;
+  background: var(--surface-muted);
+  border-radius: var(--r-md);
+  text-align: center;
+  position: relative;
+  transition: all 0.15s cubic-bezier(0.4,0,0.2,1);
+  border: 1px solid transparent;
+}
+.score-card:hover { transform: translateY(-2px); }
+.score-card .group-name { font-size: 14px; color: var(--text-2); margin-bottom: 8px; }
+.score-card .score-value { font-size: 30px; font-weight: 700; color: var(--brand); line-height: 1; }
+.score-card .rank { font-size: 18px; margin: 8px 0; }
+.score-card .history { font-size: 12px; color: var(--text-3); }
+.score-card.rank-1 { background: var(--brand-surface); border-color: #F5A623; }
+.score-card.rank-2 { border-color: #9E9E9E; }
+.score-card.rank-3 { border-color: #CD7F32; }
+.score-actions { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+
+/* ============ IdeaHub Whiteboard Scene ============ */
+.whiteboard-screen {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.whiteboard-main {
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  padding: 24px;
+  box-shadow: var(--shadow-card);
+  min-height: 280px;
+  position: relative;
+}
+.whiteboard-canvas {
+  width: 100%;
+  height: 200px;
+  background: var(--surface-muted);
+  border-radius: var(--r-md);
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--divider);
+}
+.whiteboard-canvas svg { width: 100%; height: 100%; }
+.whiteboard-tools {
+  display: flex;
+  gap: 8px;
+  padding: 12px;
+  background: var(--surface-muted);
+  border-radius: var(--r-full);
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.whiteboard-tools .tool {
+  padding: 8px 16px;
+  border-radius: var(--r-full);
+  background: var(--surface);
+  border: 1px solid var(--divider);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-2);
+  font-family: var(--font);
+}
+.whiteboard-tools .tool:hover { border-color: var(--brand); color: var(--text-1); }
+.whiteboard-tools .tool.primary { background: var(--brand); color: #fff; border-color: var(--brand); }
+
+/* A2UI 增强面板 */
+.a2ui-panel {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 280px;
+  background: var(--glass);
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  border-radius: var(--r-md);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-elev);
+  padding: 16px;
+  z-index: 10;
+  display: none;
+}
+.a2ui-panel.show { display: block; animation: fadeIn 0.25s cubic-bezier(0.4,0,0.2,1); }
+.a2ui-panel .panel-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-1);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.a2ui-panel .option-list { display: flex; flex-direction: column; gap: 8px; }
+.a2ui-panel .option-item {
+  padding: 10px 14px;
+  background: var(--surface);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-md);
+  cursor: pointer;
+  transition: all 0.15s;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-1);
+  font-family: var(--font);
+  text-align: left;
+  width: 100%;
+}
+.a2ui-panel .option-item:hover { border-color: var(--brand); background: var(--brand-surface); }
+.a2ui-panel .panel-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+/* ============ IdeaHub Meeting Scene ============ */
+.meeting-screen {
+  display: flex;
+  gap: 16px;
+}
+.meeting-video {
+  flex: 1;
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  padding: 24px;
+  box-shadow: var(--shadow-card);
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+.video-thumb {
+  background: var(--surface-muted);
+  border-radius: var(--r-md);
+  aspect-ratio: 16/9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-3);
+  font-size: 32px;
+  position: relative;
+  overflow: hidden;
+}
+.video-thumb .label {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  font-size: 12px;
+  color: var(--text-inv);
+  background: rgba(0,0,0,0.5);
+  padding: 2px 8px;
+  border-radius: var(--r-full);
+}
+.video-thumb.screen-share { grid-column: span 3; aspect-ratio: 16/6; }
+.meeting-side {
+  width: 280px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.subtitle-panel {
+  background: var(--glass);
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  border-radius: var(--r-md);
+  border: 1px solid var(--glass-border);
+  padding: 16px;
+}
+.subtitle-panel .panel-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-1);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.subtitle-content {
+  font-size: 14px;
+  color: var(--text-2);
+  line-height: 1.6;
+  max-height: 120px;
+  overflow-y: auto;
+}
+.subtitle-content .speaker { color: var(--brand); font-weight: 500; }
+.minutes-panel {
+  background: var(--glass);
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  border-radius: var(--r-md);
+  border: 1px solid var(--glass-border);
+  padding: 16px;
+}
+.minutes-panel .panel-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-1);
+  margin-bottom: 8px;
+}
+.minutes-options { display: flex; flex-direction: column; gap: 8px; }
+.minutes-options label {
+  font-size: 14px;
+  color: var(--text-2);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+/* ============ Feedback ============ */
+.feedback-fab {
+  position: fixed;
+  bottom: 32px;
+  right: 32px;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--r-full);
+  background: var(--brand);
+  color: #fff;
+  border: none;
+  font-size: 22px;
+  cursor: pointer;
+  box-shadow: var(--shadow-elev);
+  transition: all 0.15s cubic-bezier(0.4,0,0.2,1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+.feedback-fab:hover { transform: scale(1.05); }
+.feedback-fab.active { background: var(--danger); }
+
+.feedback-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 300;
+  backdrop-filter: blur(4px);
+}
+.feedback-modal.show { display: flex; }
+.feedback-box {
+  width: 90%;
+  max-width: 420px;
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-elev);
+  padding: 24px;
+}
+.feedback-box h3 { font-size: 22px; font-weight: 500; margin-bottom: 8px; }
+.feedback-box p { font-size: 14px; color: var(--text-2); margin-bottom: 16px; }
+.feedback-rating {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+.feedback-rating .star {
+  font-size: 28px;
+  cursor: pointer;
+  color: var(--text-3);
+  transition: color 0.15s;
+}
+.feedback-rating .star.active { color: var(--warning); }
+.feedback-box textarea {
+  width: 100%;
+  min-height: 80px;
+  padding: 12px 16px;
+  background: var(--surface-muted);
+  border: 1px solid transparent;
+  border-radius: var(--r-md);
+  color: var(--text-1);
+  font-size: 14px;
+  font-family: var(--font);
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.feedback-box textarea:focus { border-color: var(--brand); background: var(--surface); }
+.feedback-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+/* ============ Toast ============ */
+.toast {
+  position: fixed;
+  top: 80px;
+  left: 50%;
+  transform: translate(-50%, -20px);
+  background: var(--text-1);
+  color: var(--text-inv);
+  padding: 12px 24px;
+  border-radius: var(--r-full);
+  font-size: 14px;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.25s cubic-bezier(0.4,0,0.2,1);
+  z-index: 400;
+  box-shadow: var(--shadow-elev);
+}
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* ============ 按钮通用 ============ */
+.btn {
+  border: none;
+  cursor: pointer;
+  font-family: var(--font);
+  border-radius: var(--r-full);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 14px;
+  transition: transform 0.1s cubic-bezier(0.4,0,0.2,1), background 0.15s;
+  user-select: none;
+  padding: 12px 24px;
+}
+.btn:active { transform: scale(0.95); }
+.btn-primary { background: var(--brand); color: #fff; }
+.btn-primary:hover { background: var(--brand-pressed); }
+.btn-outline { background: transparent; color: var(--brand); border: 1px solid var(--brand); }
+.btn-outline:hover { background: var(--brand-surface); }
+.btn-ghost { background: var(--surface-muted); color: var(--text-1); }
+.btn-ghost:hover { background: var(--divider); }
+.btn-sm { padding: 8px 16px; font-size: 14px; }
+
+/* ============ Responsive ============ */
+@media (max-width: 840px) {
+  .meeting-screen { flex-direction: column; }
+  .meeting-side { width: 100%; }
+  .score-grid { grid-template-columns: repeat(2, 1fr); }
+  .vote-grid { grid-template-columns: 1fr; }
+  .counter-actions { flex-direction: column; align-items: center; }
+}
+@media (max-width: 520px) {
+  .score-grid { grid-template-columns: 1fr; }
+  .scene-switcher { padding: 8px 12px; }
+  .topbar { padding: 12px 16px; }
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div>
+    <h1>A2UI 体验沙盒</h1>
+    <div class="sub">Agent-to-UI · IdeaHub 大屏交互原型</div>
+  </div>
+  <div class="right">
+    <span style="font-size:14px;color:var(--text-3);" id="clock">--:--:--</span>
+    <button class="btn btn-ghost btn-sm" onclick="toggleTheme()">🌓 切换主题</button>
+  </div>
+</header>
+
+<nav class="scene-switcher">
+  <button class="scene-btn active" data-scene="counter">🔢 签到计数 <span class="tag">P0</span></button>
+  <button class="scene-btn" data-scene="vote">🗳️ 投票表决 <span class="tag">P0</span></button>
+  <button class="scene-btn" data-scene="quiz">📝 课堂答题 <span class="tag">P0</span></button>
+  <button class="scene-btn" data-scene="score">📊 分组计分 <span class="tag">P0</span></button>
+  <button class="scene-btn" data-scene="whiteboard">🎨 IdeaHub 白板 <span class="tag">P1</span></button>
+  <button class="scene-btn" data-scene="meeting">🎤 IdeaHub 会议 <span class="tag">P1</span></button>
+</nav>
+
+<main class="stage">
+
+  <!-- Counter Scene -->
+  <section class="scene-content active" id="scene-counter">
+    <div class="section counter-screen">
+      <!-- 统计卡片 -->
+      <div class="attendance-stats">
+        <div class="stat-card total">
+          <div class="stat-num" id="statTotal">0</div>
+          <div class="stat-label">应到 (总人数)</div>
+        </div>
+        <div class="stat-card present">
+          <div class="stat-num" id="statPresent">0</div>
+          <div class="stat-label">已签到</div>
+        </div>
+        <div class="stat-card absent">
+          <div class="stat-num" id="statAbsent">0</div>
+          <div class="stat-label">未签到</div>
+        </div>
+      </div>
+
+      <!-- 控制按钮 -->
+      <div class="attendance-controls">
+        <button class="btn btn-primary" onclick="toggleImportPanel()">📥 导入名单</button>
+        <button class="qr-trigger-btn" onclick="toggleQRPanel()">📱 扫码签到</button>
+        <button class="btn" onclick="quickAddPerson()">➕ 添加人员</button>
+        <button class="btn" onclick="markAllPresent()">✓ 全员已到</button>
+        <button class="btn btn-ghost" onclick="resetAttendance()">↻ 重置</button>
+      </div>
+
+      <!-- 导入面板 -->
+      <div class="import-panel" id="importPanel">
+        <div class="hint">📋 粘贴名单（每行一个姓名），或点击示例填充：</div>
+        <textarea id="importText" placeholder="张三&#10;李四&#10;王五&#10;..."></textarea>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-primary" onclick="importFromText()">确认导入</button>
+          <button class="btn btn-ghost" onclick="loadSampleData()">加载示例数据</button>
+          <button class="btn btn-ghost" onclick="toggleImportPanel()">取消</button>
+        </div>
+      </div>
+
+      <!-- 人员列表 -->
+      <div class="attendance-lists">
+        <div class="list-section present">
+          <div class="list-title">
+            ✅ 已签到
+            <span class="count" id="presentCount">0</span>
+          </div>
+          <div class="person-list" id="presentList">
+            <div class="empty-state" id="presentEmpty">
+              <div class="ic">📭</div>
+              <div class="text">暂无签到人员</div>
+            </div>
+          </div>
+        </div>
+        <div class="list-section absent">
+          <div class="list-title">
+            ⏳ 未签到
+            <span class="count" id="absentCount">0</span>
+          </div>
+          <div class="person-list" id="absentList">
+            <div class="empty-state" id="absentEmpty">
+              <div class="ic">📋</div>
+              <div class="text">请先导入应到人员名单</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 扫码墙效果 -->
+      <div class="photo-wall-container" id="photoWallContainer" style="display:none;">
+        <div class="photo-wall-title">
+          📸 签到墙 · 实时展示
+          <span id="wallCount" style="color:var(--brand);font-weight:600;">0</span> 人已签到
+        </div>
+        <div class="photo-wall" id="photoWall">
+          <!-- 8x6 = 48 cells, 签到后填充 -->
+        </div>
+      </div>
+
+      <!-- Agent 状态 -->
+      <div class="agent-card idle" id="agentStatus">
+        <div class="agent-row">
+          <div class="agent-icon">🤖</div>
+          <div class="agent-text" id="agentText">就绪 · 点击人员姓名快速签到，或对 Agent 说「张三到了」</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Vote Scene -->
+  <section class="scene-content" id="scene-vote">
+    <div class="section vote-screen">
+      <div class="vote-topic">议题: 是否通过 Q3 预算方案？</div>
+
+      <div class="vote-grid">
+        <div class="vote-option approve" data-option="approve">
+          <div class="label">✓ 赞成</div>
+          <div class="count" id="approveCount">12</div>
+          <div class="vote-bar"><div class="fill" id="approveBar" style="width:60%"></div></div>
+        </div>
+        <div class="vote-option reject" data-option="reject">
+          <div class="label">✗ 反对</div>
+          <div class="count" id="rejectCount">5</div>
+          <div class="vote-bar"><div class="fill" id="rejectBar" style="width:25%"></div></div>
+        </div>
+        <div class="vote-option abstain" data-option="abstain">
+          <div class="label">○ 弃权</div>
+          <div class="count" id="abstainCount">3</div>
+          <div class="vote-bar"><div class="fill" id="abstainBar" style="width:15%"></div></div>
+        </div>
+      </div>
+
+      <div class="vote-summary">
+        <span>总计: <strong id="voteTotal">20</strong> 票</span>
+        <span>·</span>
+        <span>法定人数: <strong>10</strong></span>
+        <span>·</span>
+        <span>结果: <strong style="color:var(--success)">✅ 已通过</strong></span>
+      </div>
+
+      <div class="agent-card idle">
+        <div class="agent-row">
+          <div class="agent-icon">🤖</div>
+          <div class="agent-text">就绪 · 触控点击投票，或说"赞成+3"</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Quiz Scene -->
+  <section class="scene-content" id="scene-quiz">
+    <div class="section quiz-screen">
+      <div class="quiz-header">
+        <div class="quiz-progress">第 <strong id="quizCurrent">3</strong>/10 题</div>
+        <div class="quiz-timer">⏱ <span id="quizTimer">30</span>s</div>
+      </div>
+
+      <div class="quiz-question">下列哪个是 A2UI 的核心概念？</div>
+
+      <div class="quiz-options" id="quizOptions">
+        <button class="quiz-option" data-answer="A"><span class="letter">A</span>Agent 意图驱动 UI 生成</button>
+        <button class="quiz-option" data-answer="B"><span class="letter">B</span>传统 XML 布局</button>
+        <button class="quiz-option" data-answer="C"><span class="letter">C</span>手写 Kotlin 代码</button>
+        <button class="quiz-option" data-answer="D"><span class="letter">D</span>固定模板</button>
+      </div>
+
+      <div class="context-bar">
+        <span>📊 已答: <span class="stat">25</span>/30</span>
+        <span>·</span>
+        <span>✅ 正确率: <span class="stat">85%</span></span>
+      </div>
+
+      <div class="agent-card idle">
+        <div class="agent-row">
+          <div class="agent-icon">🤖</div>
+          <div class="agent-text">就绪 · 触控选择答案，或说"下一题"</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Score Board Scene -->
+  <section class="scene-content" id="scene-score">
+    <div class="section score-screen">
+      <div class="score-header">📊 分组计分板 · 实验任务</div>
+
+      <div class="score-grid">
+        <div class="score-card rank-1" data-group="A">
+          <div class="group-name">🥇 组 A</div>
+          <div class="score-value">35</div>
+          <div class="rank">🥇</div>
+          <div class="history">+10 +5 +20</div>
+        </div>
+        <div class="score-card rank-2" data-group="B">
+          <div class="group-name">🥈 组 B</div>
+          <div class="score-value">28</div>
+          <div class="rank">🥈</div>
+          <div class="history">+8 +12 +8</div>
+        </div>
+        <div class="score-card rank-3" data-group="C">
+          <div class="group-name">🥉 组 C</div>
+          <div class="score-value">42</div>
+          <div class="rank">🥉</div>
+          <div class="history">+15 +7 +20</div>
+        </div>
+        <div class="score-card" data-group="D">
+          <div class="group-name">组 D</div>
+          <div class="score-value">19</div>
+          <div class="rank">4th</div>
+          <div class="history">+5 +9 +5</div>
+        </div>
+      </div>
+
+      <div class="score-actions">
+        <button class="btn btn-primary btn-sm">+ 加分</button>
+        <button class="btn btn-outline btn-sm">− 减分</button>
+        <button class="btn btn-ghost btn-sm">📋 导出</button>
+        <button class="btn btn-ghost btn-sm" style="color:var(--danger)">↻ 重置</button>
+      </div>
+
+      <div class="agent-card idle">
+        <div class="agent-row">
+          <div class="agent-icon">🤖</div>
+          <div class="agent-text">就绪 · 说"给组A加5分"或触控操作</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- IdeaHub Whiteboard Scene -->
+  <section class="scene-content" id="scene-whiteboard">
+    <div class="section whiteboard-screen">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <div style="font-size:16px;font-weight:600;">IdeaHub 白板 · A2UI 增强演示</div>
+        <span style="font-size:12px;color:var(--text-3);">对比：原始白板 vs A2UI 增强</span>
+      </div>
+
+      <div class="whiteboard-main">
+        <div class="whiteboard-canvas" id="whiteboardCanvas">
+          <svg viewBox="0 0 500 200" xmlns="http://www.w3.org/2000/svg">
+            <polygon points="250,30 400,170 100,170" fill="none" stroke="#666" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="0" id="triangle" />
+            <text x="250" y="195" text-anchor="middle" fill="#999" font-size="12">手写三角形（不规整）</text>
+          </svg>
+        </div>
+
+        <div class="a2ui-panel" id="whiteboardPanel">
+          <div class="panel-title">🤖 Agent 识别结果</div>
+          <div style="font-size:13px;color:var(--text-2);margin-bottom:12px;">检测到手写图形，建议：</div>
+          <div class="option-list">
+            <button class="option-item" onclick="applyWhiteboardAction('regular')">
+              <span style="font-size:16px;">📐</span> 正三角形
+            </button>
+            <button class="option-item" onclick="applyWhiteboardAction('equilateral')">
+              <span style="font-size:16px;">📏</span> 等边三角形
+            </button>
+            <button class="option-item" onclick="applyWhiteboardAction('right')">
+              <span style="font-size:16px;">📐</span> 直角三角形
+            </button>
+            <button class="option-item" onclick="applyWhiteboardAction('circle')">
+              <span style="font-size:16px;">⭕</span> 改为圆形
+            </button>
+          </div>
+          <div class="panel-actions">
+            <button class="btn btn-primary btn-sm" onclick="applyWhiteboardAction('apply')">应用美化</button>
+            <button class="btn btn-ghost btn-sm" onclick="hideWhiteboardPanel()">关闭</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="whiteboard-tools">
+        <button class="tool">🖊 书写</button>
+        <button class="tool">✏️ 橡皮</button>
+        <button class="tool">📏 直尺</button>
+        <button class="tool primary" onclick="showWhiteboardPanel()">🤖 A2UI</button>
+        <button class="tool">💬 语音转文字</button>
+        <button class="tool">📤 导出</button>
+      </div>
+
+      <div class="agent-card idle">
+        <div class="agent-row">
+          <div class="agent-icon">🤖</div>
+          <div class="agent-text">就绪 · 点击 🤖 A2UI 体验智能识别与美化</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- IdeaHub Meeting Scene -->
+  <section class="scene-content" id="scene-meeting">
+    <div class="section meeting-screen" style="background:transparent;box-shadow:none;padding:0;">
+      <div class="meeting-video">
+        <div class="video-thumb"><span>📹</span><span class="label">张总</span></div>
+        <div class="video-thumb"><span>👤</span><span class="label">李经理</span></div>
+        <div class="video-thumb"><span>👤</span><span class="label">王工程师</span></div>
+        <div class="video-thumb screen-share"><span>🖥️</span><span class="label">屏幕共享 - PPT</span></div>
+      </div>
+
+      <div class="meeting-side">
+        <div class="subtitle-panel">
+          <div class="panel-title">
+            <span>📝 实时字幕</span>
+            <label style="font-size:12px;display:flex;align-items:center;gap:4px;cursor:pointer;">
+              <input type="checkbox" checked style="accent-color:var(--brand);"> 开
+            </label>
+          </div>
+          <div class="subtitle-content" id="subtitleContent">
+            <div><span class="speaker">张总:</span> Q3预算方案需要在本周五前定稿。</div>
+            <div><span class="speaker">李经理:</span> 我赞成这个方案，我们团队已经准备好了。</div>
+            <div><span class="speaker">王工程师:</span> 技术方案需要再细化一下。</div>
+          </div>
+        </div>
+
+        <div class="minutes-panel">
+          <div class="panel-title">📋 会议纪要生成</div>
+          <div class="minutes-options">
+            <label><input type="checkbox" checked style="accent-color:var(--brand);"> ☐ 待办项</label>
+            <label><input type="checkbox" checked style="accent-color:var(--brand);"> ☐ 决议事项</label>
+            <label><input type="checkbox" checked style="accent-color:var(--brand);"> ☐ 讨论要点</label>
+            <label><input type="checkbox" style="accent-color:var(--brand);"> ☐ 风险点</label>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:12px;">
+            <button class="btn btn-primary btn-sm" style="flex:1;" onclick="generateMinutes()">🤖 生成纪要</button>
+          </div>
+        </div>
+
+        <div class="agent-card idle">
+          <div class="agent-row">
+            <div class="agent-icon">🤖</div>
+            <div class="agent-text">就绪 · Agent 正在监听会议内容</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<button class="feedback-fab" id="feedbackFab" title="反馈">💬</button>
+
+<!-- 扫码签到浮层 -->
+<div class="qr-checkin-panel" id="qrCheckinPanel">
+  <div class="qr-title">📱 扫码签到</div>
+  <div class="qr-container" id="qrContainer">
+    <!-- SVG 二维码占位 -->
+    <svg id="qrSvg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <rect width="100" height="100" fill="#fff"/>
+      <!-- 定位角 -->
+      <rect x="5" y="5" width="25" height="25" fill="none" stroke="#007DFF" stroke-width="4"/>
+      <rect x="70" y="5" width="25" height="25" fill="none" stroke="#007DFF" stroke-width="4"/>
+      <rect x="5" y="70" width="25" height="25" fill="none" stroke="#007DFF" stroke-width="4"/>
+      <rect x="12" y="12" width="11" height="11" fill="#007DFF"/>
+      <rect x="77" y="12" width="11" height="11" fill="#007DFF"/>
+      <rect x="12" y="77" width="11" height="11" fill="#007DFF"/>
+      <!-- 随机数据点 -->
+      <g fill="#181818">
+        <rect x="40" y="10" width="8" height="8"/>
+        <rect x="55" y="15" width="5" height="5"/>
+        <rect x="42" y="25" width="6" height="6"/>
+        <rect x="52" y="32" width="7" height="7"/>
+        <rect x="60" y="42" width="5" height="5"/>
+        <rect x="35" y="40" width="6" height="6"/>
+        <rect x="20" y="35" width="5" height="5"/>
+        <rect x="30" y="50" width="7" height="7"/>
+        <rect x="45" y="55" width="5" height="5"/>
+        <rect x="58" y="60" width="6" height="6"/>
+        <rect x="70" y="45" width="8" height="8"/>
+        <rect x="82" y="35" width="5" height="5"/>
+        <rect x="88" y="50" width="6" height="6"/>
+        <rect x="38" y="65" width="5" height="5"/>
+        <rect x="50" y="75" width="7" height="7"/>
+        <rect x="65" y="85" width="5" height="5"/>
+        <rect x="80" y="70" width="6" height="6"/>
+      </g>
+    </svg>
+  </div>
+  <div class="qr-hint">使用手机扫描二维码<br>即可快速完成签到</div>
+  <div class="qr-timer" id="qrTimer">🔄 二维码将在 59s 后刷新</div>
+  <div class="qr-actions">
+    <button class="btn btn-ghost btn-sm" onclick="simulateScan()">📱 模拟扫码</button>
+    <button class="btn btn-ghost btn-sm" onclick="toggleQRPanel()">关闭</button>
+  </div>
+</div>
+
+<div class="feedback-modal" id="feedbackModal">
+  <div class="feedback-box">
+    <h3>💬 体验反馈</h3>
+    <p id="feedbackDesc">请为当前场景提供您的反馈</p>
+    <div class="feedback-rating" id="feedbackRating">
+      <span class="star" data-value="1">★</span>
+      <span class="star" data-value="2">★</span>
+      <span class="star" data-value="3">★</span>
+      <span class="star" data-value="4">★</span>
+      <span class="star" data-value="5">★</span>
+    </div>
+    <textarea id="feedbackText" placeholder="您的文字反馈..."></textarea>
+    <div class="feedback-actions">
+      <button class="btn btn-ghost btn-sm" onclick="closeFeedback()">取消</button>
+      <button class="btn btn-primary btn-sm" onclick="submitFeedback()">提交反馈</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">操作成功</div>
+
+</body>
+
+<script>
+const state = {
+  counter: 0,
+  agentStatus: 'idle',
+  quizTimer: 30,
+  quizInterval: null,
+  currentScene: 'counter',
+  feedbackRating: 0,
+  feedbackData: [],
+};
+
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent = now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+setInterval(updateClock, 1000); updateClock();
+
+function toggleTheme() {
+  const html = document.documentElement;
+  const current = html.getAttribute('data-theme');
+  const next = current === 'dark' ? 'light' : 'dark';
+  html.setAttribute('data-theme', next);
+  showToast('已切换至' + (next === 'dark' ? '深色' : '浅色') + '模式');
+}
+
+document.querySelectorAll('.scene-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const scene = btn.dataset.scene;
+    state.currentScene = scene;
+    document.querySelectorAll('.scene-btn').forEach(b => b.classList.toggle('active', b === btn));
+    document.querySelectorAll('.scene-content').forEach(s => s.classList.toggle('active', s.id === 'scene-' + scene));
+    showToast('已切换至: ' + btn.textContent.trim().split(' ')[0]);
+  });
+});
+
+// ============ Attendance / Counter Logic ============
+const attendanceState = {
+  people: []
+};
+
+const SAMPLE_NAMES = [
+  '张三', '李四', '王五', '赵六', '钱七', '孙八', '周九', '吴十',
+  '郑十一', '王十二', '冯十三', '陈十四', '卫十五', '蒋十六',
+  '沈十七', '韩十八', '杨十九', '朱二十'
+];
+
+function renderAttendance() {
+  const people = attendanceState.people;
+  const total = people.length;
+  const present = people.filter(p => p.present).length;
+  const absent = total - present;
+
+  document.getElementById('statTotal').textContent = total;
+  document.getElementById('statPresent').textContent = present;
+  document.getElementById('statAbsent').textContent = absent;
+  document.getElementById('presentCount').textContent = present;
+  document.getElementById('absentCount').textContent = absent;
+
+  const presentList = document.getElementById('presentList');
+  const absentList = document.getElementById('absentList');
+
+  const presentPeople = people.filter(p => p.present);
+  const absentPeople = people.filter(p => !p.present);
+
+  if (presentPeople.length === 0) {
+    presentList.innerHTML = '<div class="empty-state"><div class="ic">📭</div><div class="text">暂无签到人员</div></div>';
+  } else {
+    presentList.innerHTML = presentPeople.map((p, i) => `
+      <div class="person-item present" onclick="togglePerson(${people.indexOf(p)})">
+        <span class="name">${p.name}</span>
+        <span class="status-icon">✅</span>
+      </div>
+    `).join('');
+  }
+
+  if (absentPeople.length === 0) {
+    if (total === 0) {
+      absentList.innerHTML = '<div class="empty-state"><div class="ic">📋</div><div class="text">请先导入应到人员名单</div></div>';
+    } else {
+      absentList.innerHTML = '<div class="empty-state"><div class="ic">🎉</div><div class="text">全员已到！</div></div>';
+    }
+  } else {
+    absentList.innerHTML = absentPeople.map((p) => `
+      <div class="person-item absent" onclick="togglePerson(${people.indexOf(p)})">
+        <span class="name">${p.name}</span>
+        <span class="status-icon">👤</span>
+      </div>
+    `).join('');
+  }
+}
+
+function togglePerson(index) {
+  if (attendanceState.people[index]) {
+    attendanceState.people[index].present = !attendanceState.people[index].present;
+    renderAttendance();
+    renderPhotoWall();
+
+    if (attendanceState.people[index].present) {
+      setAgentStatus('done', `✅ ${attendanceState.people[index].name} 已签到`);
+      showToast(`${attendanceState.people[index].name} 已签到`);
+      setTimeout(() => setAgentStatus('idle', '就绪 · 点击人员姓名快速签到，或对 Agent 说「张三到了」'), 2000);
+    } else {
+      setAgentStatus('idle', `${attendanceState.people[index].name} 已标记为未到`);
+    }
+  }
+}
+
+function toggleImportPanel() {
+  document.getElementById('importPanel').classList.toggle('show');
+}
+
+function importFromText() {
+  const text = document.getElementById('importText').value.trim();
+  if (!text) {
+    showToast('请输入人员名单');
+    return;
+  }
+
+  const names = text.split('\n').map(n => n.trim()).filter(n => n.length > 0);
+  attendanceState.people = names.map(name => ({ name: name, present: false }));
+  renderAttendance();
+  toggleImportPanel();
+  setAgentStatus('done', `✅ 已导入 ${names.length} 人，点击姓名快速签到`);
+  showToast(`已导入 ${names.length} 人`);
+  setTimeout(() => setAgentStatus('idle', '就绪 · 点击人员姓名快速签到，或对 Agent 说「张三到了」'), 2000);
+}
+
+function loadSampleData() {
+  document.getElementById('importText').value = SAMPLE_NAMES.join('\n');
+}
+
+function quickAddPerson() {
+  const name = prompt('请输入人员姓名:');
+  if (name && name.trim()) {
+    attendanceState.people.push({ name: name.trim(), present: false });
+    renderAttendance();
+    showToast(`已添加: ${name.trim()}`);
+  }
+}
+
+function markAllPresent() {
+  if (attendanceState.people.length === 0) {
+    showToast('请先导入人员名单');
+    return;
+  }
+  attendanceState.people.forEach(p => p.present = true);
+  renderAttendance();
+  renderPhotoWall();
+  setAgentStatus('done', `✅ 全员已到，共 ${attendanceState.people.length} 人`);
+  showToast('全员已到');
+  setTimeout(() => setAgentStatus('idle', '就绪 · 点击人员姓名快速签到，或对 Agent 说「张三到了」'), 2000);
+}
+
+function resetAttendance() {
+  attendanceState.people = [];
+  renderAttendance();
+  renderPhotoWall();
+  setAgentStatus('idle', '就绪 · 已清空名单，请重新导入');
+  showToast('已重置');
+}
+
+// ============ QR Check-in & Photo Wall ============
+let qrTimerInterval = null;
+let qrCountdown = 59;
+
+function toggleQRPanel() {
+  const panel = document.getElementById('qrCheckinPanel');
+  panel.classList.toggle('show');
+  
+  if (panel.classList.contains('show')) {
+    startQRTimer();
+  } else {
+    stopQRTimer();
+  }
+}
+
+function startQRTimer() {
+  stopQRTimer();
+  qrCountdown = 59;
+  updateQRTimerDisplay();
+  qrTimerInterval = setInterval(() => {
+    qrCountdown--;
+    if (qrCountdown <= 0) {
+      qrCountdown = 59;
+      refreshQRCode();
+      showToast('二维码已刷新');
+    }
+    updateQRTimerDisplay();
+  }, 1000);
+}
+
+function stopQRTimer() {
+  if (qrTimerInterval) {
+    clearInterval(qrTimerInterval);
+    qrTimerInterval = null;
+  }
+}
+
+function updateQRTimerDisplay() {
+  const timerEl = document.getElementById('qrTimer');
+  if (timerEl) {
+    timerEl.textContent = `🔄 二维码将在 ${qrCountdown}s 后刷新`;
+  }
+}
+
+function refreshQRCode() {
+  const svg = document.getElementById('qrSvg');
+  if (!svg) return;
+  
+  // 随机刷新数据点位置
+  const dataGroup = svg.querySelector('g');
+  if (dataGroup) {
+    const rects = dataGroup.querySelectorAll('rect');
+    rects.forEach(rect => {
+      const x = 20 + Math.random() * 75;
+      const y = 20 + Math.random() * 75;
+      rect.setAttribute('x', Math.floor(x));
+      rect.setAttribute('y', Math.floor(y));
+    });
+  }
+}
+
+function simulateScan() {
+  const absentPeople = attendanceState.people.filter(p => !p.present);
+  if (absentPeople.length === 0) {
+    showToast('所有人已签到');
+    return;
+  }
+  
+  // 随机选择一个未签到的人模拟扫码
+  const randomPerson = absentPeople[Math.floor(Math.random() * absentPeople.length)];
+  randomPerson.present = true;
+  
+  renderAttendance();
+  renderPhotoWall();
+  
+  setAgentStatus('done', `📱 ${randomPerson.name} 扫码签到成功`);
+  showToast(`${randomPerson.name} 签到成功`);
+  setTimeout(() => setAgentStatus('idle', '就绪 · 点击人员姓名快速签到，或对 Agent 说「张三到了」'), 2500);
+}
+
+function renderPhotoWall() {
+  const container = document.getElementById('photoWallContainer');
+  const wall = document.getElementById('photoWall');
+  const wallCount = document.getElementById('wallCount');
+  
+  if (attendanceState.people.length === 0) {
+    container.style.display = 'none';
+    return;
+  }
+  
+  // 只有当有人签到时才显示
+  const presentCount = attendanceState.people.filter(p => p.present).length;
+  if (presentCount === 0) {
+    container.style.display = 'none';
+    return;
+  }
+  
+  container.style.display = 'block';
+  wallCount.textContent = presentCount;
+  
+  // 8 列 x 6 行 = 48 格
+  const totalCells = 48;
+  const presentPeople = attendanceState.people.filter(p => p.present);
+  
+  let html = '';
+  for (let i = 0; i < totalCells; i++) {
+    if (i < presentPeople.length) {
+      const person = presentPeople[i];
+      const isEven = i % 2 === 0;
+      html += `<div class="photo-wall-cell filled ${isEven ? 'even' : 'odd'}" title="${person.name}">${person.name.slice(-1)}</div>`;
+    } else {
+      html += `<div class="photo-wall-cell"></div>`;
+    }
+  }
+  wall.innerHTML = html;
+}
+
+// ============ Agent Status & Commands ============
+const agentStatusEl = document.getElementById('agentStatus');
+const agentTextEl = document.getElementById('agentText');
+
+function setAgentStatus(status, text) {
+  state.agentStatus = status;
+  if (!agentStatusEl) return;
+  agentStatusEl.className = 'agent-card ' + status;
+
+  let icon = '🤖';
+  if (status === 'listening') {
+    agentTextEl.innerHTML = '<div class="agent-wave"><span></span><span></span><span></span><span></span><span></span></div><span style="margin-left:8px">' + text + '</span>';
+  } else if (status === 'processing') {
+    icon = '⚡';
+    agentTextEl.innerHTML = text + '<div class="agent-progress"><div class="bar" id="agentBar" style="width:0%"></div></div>';
+    setTimeout(() => { const bar = document.getElementById('agentBar'); if (bar) bar.style.width = '60%'; }, 100);
+  } else if (status === 'done') {
+    icon = '✅';
+    agentTextEl.textContent = text;
+  } else {
+    agentTextEl.textContent = text;
+  }
+  agentStatusEl.querySelector('.agent-icon').textContent = icon;
+}
+
+function simulateAgentCommand(cmd) {
+  setAgentStatus('listening', '🔊 "' + cmd + '"');
+
+  setTimeout(() => {
+    setAgentStatus('processing', '⚡ 正在执行: ' + cmd);
+
+    setTimeout(() => {
+      let result = '';
+
+      // 签到场景：检查「XXX到了」或「XXX来了」
+      const nameMatch = cmd.match(/(.+?)(到了|来了|已到|签到|出席)/);
+      if (nameMatch && attendanceState.people.length > 0) {
+        const targetName = nameMatch[1].trim();
+        const person = attendanceState.people.find(p => p.name === targetName);
+        if (person) {
+          person.present = true;
+          renderAttendance();
+          result = '✅ ' + targetName + ' 已签到';
+          const absentCount = attendanceState.people.filter(p => !p.present).length;
+          if (absentCount > 0) {
+            result += ' · 还有 ' + absentCount + ' 人未到';
+          }
+        } else {
+          result = '⚠️ 未找到人员: ' + targetName;
+        }
+      } else if (cmd.includes('点名') || cmd.includes('签到')) {
+        result = '📋 应到 ' + attendanceState.people.length + ' 人，已到 ' + 
+                 attendanceState.people.filter(p => p.present).length + ' 人';
+      } else if (cmd.includes('未到') || cmd.includes('谁没来')) {
+        const absentList = attendanceState.people.filter(p => !p.present).map(p => p.name);
+        result = absentList.length > 0 
+          ? '⏳ 未签到: ' + absentList.join('、')
+          : '🎉 全员已到';
+      } else if (cmd.includes('归零') || cmd.includes('重置')) {
+        resetAttendance();
+        result = '已重置';
+      } else {
+        result = '已执行: ' + cmd;
+      }
+
+      setAgentStatus('done', '✅ ' + result);
+      showToast(result);
+
+      setTimeout(() => setAgentStatus('idle', '就绪 · 点击人员姓名快速签到，或对 Agent 说「张三到了」'), 2500);
+    }, 1000);
+  }, 600);
+}
+
+document.querySelectorAll('.vote-option').forEach(opt => {
+  opt.addEventListener('click', () => {
+    const type = opt.dataset.option;
+    const el = document.getElementById(type + 'Count');
+    el.textContent = parseInt(el.textContent) + 1;
+    updateVoteBars();
+    showToast('已投: ' + opt.querySelector('.label').textContent.trim());
+  });
+});
+
+function updateVoteBars() {
+  const a = parseInt(document.getElementById('approveCount').textContent);
+  const r = parseInt(document.getElementById('rejectCount').textContent);
+  const b = parseInt(document.getElementById('abstainCount').textContent);
+  const total = a + r + b;
+  document.getElementById('voteTotal').textContent = total;
+  document.getElementById('approveBar').style.width = (a / total * 100) + '%';
+  document.getElementById('rejectBar').style.width = (r / total * 100) + '%';
+  document.getElementById('abstainBar').style.width = (b / total * 100) + '%';
+}
+
+document.querySelectorAll('.quiz-option').forEach(opt => {
+  opt.addEventListener('click', () => {
+    const answer = opt.dataset.answer;
+    document.querySelectorAll('.quiz-option').forEach(o => o.classList.remove('selected', 'correct', 'wrong'));
+    if (answer === 'A') {
+      opt.classList.add('correct');
+      showToast('✅ 正确！');
+    } else {
+      opt.classList.add('wrong');
+      document.querySelector('.quiz-option[data-answer="A"]').classList.add('correct');
+      showToast('❌ 答案是 A');
+    }
+  });
+});
+
+function startQuizTimer() {
+  if (state.quizInterval) clearInterval(state.quizInterval);
+  state.quizTimer = 30;
+  const timerEl = document.getElementById('quizTimer');
+  timerEl.textContent = state.quizTimer;
+  state.quizInterval = setInterval(() => {
+    state.quizTimer--;
+    timerEl.textContent = state.quizTimer;
+    if (state.quizTimer <= 10) timerEl.style.color = 'var(--danger)';
+    if (state.quizTimer <= 0) {
+      clearInterval(state.quizInterval);
+      showToast('⏱ 时间到！');
+    }
+  }, 1000);
+}
+startQuizTimer();
+
+document.querySelectorAll('.score-card').forEach(card => {
+  card.addEventListener('click', () => {
+    const group = card.dataset.group;
+    showToast('点击了 ' + group + ' - 可通过Agent操作');
+  });
+});
+
+/* Whiteboard A2UI */
+function showWhiteboardPanel() {
+  document.getElementById('whiteboardPanel').classList.add('show');
+}
+function hideWhiteboardPanel() {
+  document.getElementById('whiteboardPanel').classList.remove('show');
+}
+function applyWhiteboardAction(action) {
+  const svg = document.querySelector('#whiteboardCanvas svg');
+  if (!svg) return;
+  const tri = document.getElementById('triangle');
+  if (action === 'regular') {
+    tri.setAttribute('points', '250,40 390,170 110,170');
+    tri.setAttribute('stroke-width', '2');
+    showToast('✅ 已修正为正三角形');
+  } else if (action === 'circle') {
+    svg.innerHTML = '<circle cx="250" cy="100" r="60" fill="none" stroke="#666" stroke-width="2"/><text x="250" y="195" text-anchor="middle" fill="#999" font-size="12">已转换为圆形</text>';
+    showToast('✅ 已转换为圆形');
+  } else if (action === 'apply') {
+    showToast('✅ 已应用美化');
+    hideWhiteboardPanel();
+  } else {
+    showToast('✅ 已选择: ' + action);
+  }
+}
+
+/* Meeting A2UI */
+function generateMinutes() {
+  setAgentStatus('listening', '🤖 正在分析会议内容...');
+  setTimeout(() => {
+    setAgentStatus('processing', '⚡ 生成纪要中...');
+    setTimeout(() => {
+      setAgentStatus('done', '✅ 会议纪要已生成');
+      showToast('📋 纪要已生成');
+    }, 1200);
+  }, 600);
+}
+
+/* Feedback */
+const feedbackFab = document.getElementById('feedbackFab');
+const feedbackModal = document.getElementById('feedbackModal');
+const feedbackDesc = document.getElementById('feedbackDesc');
+const feedbackText = document.getElementById('feedbackText');
+
+feedbackFab.addEventListener('click', () => {
+  const sceneNames = {
+    counter: '签到计数', vote: '投票表决', quiz: '课堂答题',
+    score: '分组计分', whiteboard: 'IdeaHub 白板', meeting: 'IdeaHub 会议'
+  };
+  feedbackDesc.textContent = '请为 "' + (sceneNames[state.currentScene] || '当前') + '" 场景提供反馈';
+  feedbackModal.classList.add('show');
+  state.feedbackRating = 0;
+  document.querySelectorAll('#feedbackRating .star').forEach(s => s.classList.remove('active'));
+});
+
+function closeFeedback() {
+  feedbackModal.classList.remove('show');
+}
+
+document.querySelectorAll('#feedbackRating .star').forEach(star => {
+  star.addEventListener('click', () => {
+    state.feedbackRating = parseInt(star.dataset.value);
+    document.querySelectorAll('#feedbackRating .star').forEach(s => {
+      s.classList.toggle('active', parseInt(s.dataset.value) <= state.feedbackRating);
+    });
+  });
+});
+
+function submitFeedback() {
+  const data = {
+    scene: state.currentScene,
+    rating: state.feedbackRating,
+    text: feedbackText.value,
+    time: new Date().toISOString(),
+  };
+  state.feedbackData.push(data);
+  localStorage.setItem('a2ui_feedback', JSON.stringify(state.feedbackData));
+  feedbackModal.classList.remove('show');
+  feedbackText.value = '';
+  showToast('✅ 反馈已提交，感谢！');
+  console.log('Feedback saved:', data);
+}
+
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2500);
+}
+</script>
+
+</html>

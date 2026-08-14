@@ -104,6 +104,9 @@ triggers:
 
 knowledge_refs:
   - ".trae/reports/03-UX设计师-鸿蒙移动端与Agent交互UX调研报告.md"
+  - "C:/Code/GitHub/harmony-design-skill/SKILL.md"
+  - "C:/Code/GitHub/harmony-design-skill/references/design-tokens.json"
+  - "C:/Code/GitHub/harmony-design-skill/references/arkui-code-snippets.ets"
 ---
 
 # UX 设计师 Agent (UX Designer)

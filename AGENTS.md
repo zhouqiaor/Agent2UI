@@ -115,3 +115,43 @@
 完整的工作流编排配置、跨角色上下文传递表、输入输出契约详见：
 
 > [`.trae/skills/WORKFLOW.md`](.trae/skills/WORKFLOW.md) | [`.ai/skills/WORKFLOW.md`](.ai/skills/WORKFLOW.md)
+
+---
+
+## 改进路线图（2026-08-14 检视）
+
+> 来源：[`.ai/reports/08-工作流检视报告.md`](.ai/reports/08-工作流检视报告.md)  
+> **当前状态**: 检视完成，共发现 1 Blocker + 4 Major + 3 Minor 问题
+
+### 阶段 1：关键修复（P0，建议立即执行）
+
+| # | 任务 | 关联问题 | 工作量 | 状态 |
+|---|------|---------|--------|------|
+| 1 | 将 `.ai/agents/` v2.0 文件同步复制到 `.trae/agents/` | M-01 | 5 min | ⚠️ 待执行 |
+| 2 | 在 Dev 输入契约增加 test_report.md / performance_baseline.md (source=tester) 作为 optional | M-03 | 10 min | ⚠️ 待执行 |
+
+### 阶段 2：重要优化（P1，建议本迭代完成）
+
+| # | 任务 | 关联问题 | 工作量 | 状态 |
+|---|------|---------|--------|------|
+| 1 | 同步 `.trae/skills/WORKFLOW.md` 与 `.ai/skills/WORKFLOW.md` 内容 | M-02 | 15 min | ⚠️ 待执行 |
+| 2 | 扩展 `pipeline.py` SCENE_PROFILES 支持多场景（会议助手、待办清单等） | M-04 | 30 min | ⚠️ 待执行 |
+| 3 | 在 `validate.py` 增加质量门控运行时验证 | m-03 | 1 h | ⚠️ 待执行 |
+| 4 | 修复 `pipeline.py` Agent handler 对接真实 Skill 调用 | B-01 | 4-8 h | ⚠️ 待执行 |
+
+### 阶段 3：持续改进（P2/P3，建议后续迭代）
+
+| # | 任务 | 优先级 | 工作量 | 状态 |
+|---|------|--------|--------|------|
+| 1 | 增加 Dev → Test 直接流转路径（跳过 Review 仅自检场景） | P2 | 2 h | ⚠️ 待执行 |
+| 2 | 引入 SqliteSaver 替代 InMemorySaver 做持久检查点 | P2 | 1 h | ⚠️ 待执行 |
+| 3 | 增加人工介入点（Human-in-the-loop） | P2 | 2 h | ⚠️ 待执行 |
+| 4 | 为每个 Agent Handler 增加单元测试 | P3 | 4 h | ⚠️ 待执行 |
+
+### 问题统计
+
+| 严重度 | 数量 | 核心问题 |
+|--------|------|---------|
+| 🔴 Blocker | 1 | 编排引擎 Agent handler 为模拟实现，未对接真实 Skill |
+| 🟠 Major | 4 | `.trae/agents/` 未同步 v2.0、Dev 回退缺少 test_report 输入、WORKFLOW.md 双版本不同步、场景 Profile 仅 1 个 |
+| 🟡 Minor | 3 | PM spec.md 未声明 consumers、错误处理无恢复、质量门控无运行时验证 |

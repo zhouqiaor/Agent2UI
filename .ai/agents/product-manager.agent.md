@@ -117,6 +117,12 @@ triggers:
 
 knowledge_refs:
   - ".trae/reports/02-产品经理-教育与会议场景A2UI研究报告.md"
+  - "C:/Code/IdeaHub_Dev/skills/ideahub-product-support/final/skill-final-ultimate/SKILL.md"
+  - "C:/Code/IdeaHub_Dev/skills/ideahub-product-support/final/skill-final-ultimate/references/quickstart/"
+  - "C:/Code/IdeaHub_Dev/skills/ideahub-product-support/final/skill-final-ultimate/references/manual/"
+  - "C:/Code/IdeaHub_Dev/skills/ideahub-product-support/final/skill-final-ultimate/references/faq/"
+  - "C:/Code/IdeaHub_Dev/skills/ideahub-product-support/final/skill-final-ultimate/references/deployment/"
+  - "C:/Code/IdeaHub_Dev/skills/ideahub-product-support/final/skill-final-ultimate/references/account/"
 ---
 
 # 产品经理 Agent (Product Manager)

@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A2UI Playground · HarmonyOS Design</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap">
+<style>
+  :root {
+    --primary: #3B82F6;
+    --primary-dark: #2563EB;
+    --primary-light: #EFF6FF;
+    --primary-hover: #60A5FA;
+    --surface: #FFFFFF;
+    --surface-secondary: #F5F5F5;
+    --surface-tertiary: #FAFAFA;
+    --divider: #E5E5E5;
+    --text-primary: #1A1A1A;
+    --text-secondary: #666666;
+    --text-tertiary: #999999;
+    --error: #EF4444;
+    --success: #10B981;
+    --warning: #F59E0B;
+    --info: #3B82F6;
+    --shadow-1: 0 2vp 8vp rgba(0,0,0,0.08);
+    --shadow-2: 0 4vp 16vp rgba(0,0,0,0.12);
+  }
+  .dark {
+    --surface: #1A1A1A;
+    --surface-secondary: #262626;
+    --surface-tertiary: #333333;
+    --divider: #404040;
+    --text-primary: #E5E5E5;
+    --text-secondary: #A3A3A3;
+    --text-tertiary: #737373;
+    --shadow-1: 0 2vp 8vp rgba(0,0,0,0.32);
+    --shadow-2: 0 4vp 16vp rgba(0,0,0,0.48);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: 'Noto Sans SC', 'HarmonyOS Sans SC', -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif;
+    background: var(--surface);
+    color: var(--text-primary);
+    font-weight: 400;
+    -webkit-font-smoothing: antialiased;
+  }
+  .editor-font { font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace; }
+
+  .scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+  .scrollbar::-webkit-scrollbar-track { background: transparent; }
+  .scrollbar::-webkit-scrollbar-thumb { background: var(--divider); border-radius: 3px; }
+  .scrollbar::-webkit-scrollbar-thumb:hover { background: var(--text-tertiary); }
+
+  @keyframes slideUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes scaleIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+  @keyframes pulse-dot { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.6; transform: scale(0.9); } }
+  @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+  @keyframes lightReflection {
+    0% { transform: translateX(-100%) skewX(-12deg); }
+    100% { transform: translateX(200%) skewX(-12deg); }
+  }
+
+  .animate-slide-up { animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1) both; }
+  .animate-fade-in { animation: fadeIn 0.3s ease both; }
+  .animate-scale-in { animation: scaleIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) both; }
+  .pulse-dot { animation: pulse-dot 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
+
+  .hm-card {
+    background: var(--surface-secondary);
+    border-radius: 8px;
+    box-shadow: var(--shadow-1);
+    border: 1px solid var(--divider);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .hm-card:hover {
+    box-shadow: var(--shadow-2);
+    transform: translateY(-1px);
+  }
+
+  .hm-button {
+    position: relative;
+    overflow: hidden;
+    border-radius: 50%;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .hm-button::after {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 50%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    animation: lightReflection 3s infinite;
+  }
+  .hm-button:active {
+    transform: scale(0.96);
+    filter: brightness(0.92);
+  }
+
+  .hm-button-primary {
+    background: var(--primary);
+    color: white;
+  }
+  .hm-button-primary:hover { background: var(--primary-hover); }
+
+  .hm-button-secondary {
+    background: var(--surface-secondary);
+    color: var(--text-primary);
+    border: 1px solid var(--divider);
+  }
+  .hm-button-secondary:hover { background: var(--surface-tertiary); }
+
+  .hm-button-tertiary {
+    background: transparent;
+    color: var(--primary);
+  }
+  .hm-button-tertiary:hover { background: var(--primary-light); }
+
+  .hm-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+
+  .hm-tag-info { background: var(--primary-light); color: var(--primary); }
+  .hm-tag-success { background: rgba(16,185,129,0.1); color: var(--success); }
+  .hm-tag-warning { background: rgba(245,158,11,0.1); color: var(--warning); }
+  .hm-tag-error { background: rgba(239,68,68,0.1); color: var(--error); }
+
+  .hm-input {
+    background: var(--surface-secondary);
+    border: 1px solid var(--divider);
+    border-radius: 4px;
+    color: var(--text-primary);
+    transition: all 0.2s;
+  }
+  .hm-input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+  }
+
+  .hm-progress {
+    background: var(--divider);
+    border-radius: 100px;
+    overflow: hidden;
+  }
+  .hm-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary), var(--primary-hover));
+    border-radius: 100px;
+    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .device-frame {
+    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25), 0 0 0 8px var(--surface-secondary), 0 0 0 10px var(--divider);
+  }
+
+  .token-key { color: #EC4899; }
+  .token-string { color: #10B981; }
+  .token-number { color: #F59E0B; }
+  .token-bool { color: #8B5CF6; }
+  .token-comment { color: var(--text-tertiary); font-style: italic; }
+  .token-punct { color: var(--text-tertiary); }
+
+  .log-line {
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 11px;
+    line-height: 1.6;
+  }
+  .log-in { color: var(--primary); }
+  .log-out { color: var(--warning); }
+  .log-system { color: var(--text-tertiary); }
+  .log-action { color: var(--success); }
+
+  .floating-panel {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    z-index: 50;
+    animation: scaleIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .floating-panel-content {
+    background: var(--surface);
+    border: 1px solid var(--divider);
+    border-radius: 12px;
+    box-shadow: var(--shadow-2);
+  }
+
+  .agent-status-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--success);
+    box-shadow: 0 0 0 0 rgba(16,185,129,0.7);
+    animation: agentPulse 2s infinite;
+  }
+  @keyframes agentPulse {
+    0% { box-shadow: 0 0 0 0 rgba(16,185,129,0.7); }
+    70% { box-shadow: 0 0 0 8px rgba(16,185,129,0); }
+    100% { box-shadow: 0 0 0 0 rgba(16,185,129,0); }
+  }
+
+  .skeleton {
+    background: linear-gradient(90deg, var(--surface-secondary) 25%, var(--surface-tertiary) 50%, var(--surface-secondary) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+<div class="flex flex-col h-screen overflow-hidden">
+
+  <!-- Top Bar -->
+  <header class="flex items-center justify-between px-6 py-3 border-b" style="border-color: var(--divider); background: var(--surface-secondary);">
+    <div class="flex items-center gap-3">
+      <div class="flex items-center gap-2.5">
+        <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background: linear-gradient(135deg, #3B82F6, #1D4ED8); box-shadow: 0 2px 8px rgba(59,130,246,0.3);">
+          <i data-lucide="sparkles" class="w-5 h-5 text-white"></i>
+        </div>
+        <div>
+          <div class="font-medium text-sm leading-tight" style="color: var(--text-primary);">A2UI Playground</div>
+          <div class="text-[11px] mt-0.5" style="color: var(--text-tertiary);">Agent-to-User Interface · v0.9.1 · HarmonyOS Design</div>
+        </div>
+      </div>
+      <div class="h-8 w-px mx-1" style="background: var(--divider);"></div>
+      <div class="flex items-center gap-2 text-xs" style="color: var(--text-secondary);">
+        <span class="hm-tag hm-tag-success"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> 协议合规</span>
+        <span>18 基础组件 · 7 扩展组件</span>
+      </div>
+    </div>
+    
+    <div class="flex items-center gap-2">
+      <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium" style="background: var(--surface); border: 1px solid var(--divider); color: var(--text-secondary);">
+        <span class="agent-status-dot"></span>
+        <span>Agent 就绪</span>
+      </div>
+      <button @click="toggleTheme" class="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition" :title="theme === 'dark' ? '切换浅色模式' : '切换深色模式'">
+        <i :data-lucide="theme === 'dark' ? 'sun' : 'moon'" class="w-4 h-4" :style="{color: var(--text-secondary)}"></i>
+      </button>
+      <button class="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition" title="设置">
+        <i data-lucide="settings" class="w-4 h-4" :style="{color: var(--text-secondary)}"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <div class="flex flex-1 overflow-hidden">
+
+    <!-- Left: Schema Editor Panel -->
+    <aside class="flex flex-col border-r" style="border-color: var(--divider); width: 460px; min-width: 400px; background: var(--surface);">
+      
+      <!-- Section Header -->
+      <div class="flex items-center justify-between px-5 py-3 border-b" style="border-color: var(--divider); background: var(--surface-secondary);">
+        <div class="flex items-center gap-2">
+          <i data-lucide="code-2" class="w-4 h-4" style="color: var(--primary);"></i>
+          <span class="font-medium text-sm" style="color: var(--text-primary);">Schema 编辑器</span>
+          <span class="hm-tag hm-tag-info">A2UI v0.9.1</span>
+        </div>
+        <div class="flex items-center gap-1">
+          <button @click="validateSchema" class="p-1.5 rounded-md hover:bg-black/5 dark:hover:bg-white/5 transition" title="校验 Schema">
+            <i data-lucide="check-circle" class="w-4 h-4" :style="{color: var(--text-secondary)}"></i>
+          </button>
+          <button @click="formatSchema" class="p-1.5 rounded-md hover:bg-black/5 dark:hover:bg-white/5 transition" title="格式化">
+            <i data-lucide="indent" class="w-4 h-4" :style="{color: var(--text-secondary)}"></i>
+          </button>
+          <button @click="copySchema" class="p-1.5 rounded-md hover:bg-black/5 dark:hover:bg-white/5 transition" title="复制">
+            <i data-lucide="copy" class="w-4 h-4" :style="{color: var(--text-secondary)}"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Example Selector -->
+      <div class="px-5 py-3 border-b" style="border-color: var(--divider);">
+        <label class="text-xs font-medium mb-2 block" style="color: var(--text-secondary);">加载示例</label>
+        <div class="flex gap-2">
+          <button v-for="ex in examples" :key="ex.id"
+                  @click="loadExample(ex.id)"
+                  :class="['flex-1 px-3 py-2 rounded-lg text-xs font-medium transition flex items-center justify-center gap-1.5',
+                           activeExample === ex.id ? 'text-white shadow-md' : 'hover:bg-black/5 dark:hover:bg-white/5']"
+                  :style="activeExample === ex.id ? 'background: var(--primary); box-shadow: 0 2px 8px rgba(59,130,246,0.3);' : 'background: var(--surface-secondary); border: 1px solid var(--divider); color: var(--text-primary);'"
+                  :title="ex.desc">
+            <span>{{ ex.icon }}</span>
+            <span>{{ ex.name }}</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Editor -->
+      <div class="flex-1 overflow-auto scrollbar relative" style="background: var(--surface-secondary);">
+        <div class="flex min-h-full">
+          <div class="py-4 px-3 text-right editor-font text-xs select-none" style="color: var(--text-tertiary);">
+            <div v-for="n in lineCount" :key="n">{{ n }}</div>
+          </div>
+          <div class="flex-1 py-4 pr-4">
+            <div class="editor-font text-xs leading-6" style="color: var(--text-primary);">
+              <div v-for="(line, idx) in schemaLines" :key="idx" class="mb-0.5">
+                <div class="whitespace-pre-wrap px-1" 
+                     :class="{ 'bg-red-500/10 rounded': validationErrors.some(e => e.line === idx + 1) }">
+                  <span class="token-key" v-if="isKey(line)">{{ getKey(line) }}</span>
+                  <span class="token-punct" v-else-if="isPunct(line)">{{ line }}</span>
+                  <span class="token-string" v-else-if="isString(line)">{{ line }}</span>
+                  <span class="token-number" v-else-if="isNumber(line)">{{ line }}</span>
+                  <span class="token-bool" v-else-if="isBool(line)">{{ line }}</span>
+                  <span class="token-comment" v-else-if="isComment(line)">{{ line }}</span>
+                  <span v-else>{{ line }}</span>
+                </div>
+                <div v-if="validationErrors.some(e => e.line === idx + 1)" 
+                     class="text-[10px] pl-2 mt-0.5" style="color: var(--error);">
+                  ⚠ {{ validationErrors.find(e => e.line === idx + 1)?.message }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Validation Status -->
+      <div class="px-5 py-3 border-t flex items-center justify-between" style="border-color: var(--divider); background: var(--surface);">
+        <div class="flex items-center gap-2">
+          <i v-if="validationErrors.length === 0" data-lucide="check-circle" class="w-4 h-4" style="color: var(--success);"></i>
+          <i v-else data-lucide="alert-triangle" class="w-4 h-4" style="color: var(--warning);"></i>
+          <span class="text-xs font-medium" :style="{ color: validationErrors.length === 0 ? 'var(--success)' : 'var(--warning)' }">
+            {{ validationErrors.length === 0 ? 'Schema 合规' : validationErrors.length + ' 个问题需修复' }}
+          </span>
+        </div>
+        <div class="flex items-center gap-4 text-xs" style="color: var(--text-tertiary);">
+          <span>{{ lineCount }} 行</span>
+          <span class="h-3 w-px" style="background: var(--divider);"></span>
+          <span>{{ componentCount }} 组件</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Right: Preview Panel -->
+    <main class="flex-1 flex flex-col overflow-hidden" style="background: var(--surface);">
+      
+      <!-- Preview Header -->
+      <div class="flex items-center justify-between px-5 py-3 border-b" style="border-color: var(--divider); background: var(--surface-secondary);">
+        <div class="flex items-center gap-2">
+          <i data-lucide="monitor" class="w-4 h-4" style="color: var(--primary);"></i>
+          <span class="font-medium text-sm" style="color: var(--text-primary);">实时预览</span>
+          <span class="hm-tag hm-tag-success"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500 pulse-dot"></span> 渲染中</span>
+        </div>
+        <div class="flex items-center gap-1">
+          <button v-for="d in devices" :key="d.id"
+                  @click="activeDevice = d.id"
+                  :class="['px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1.5',
+                           activeDevice === d.id ? 'text-white shadow' : 'hover:bg-black/5 dark:hover:bg-white/5']"
+                  :style="activeDevice === d.id ? 'background: var(--primary);' : 'background: var(--surface); border: 1px solid var(--divider); color: var(--text-primary);'">
+            <i :data-lucide="d.icon" class="w-3.5 h-3.5"></i>
+            {{ d.name }}
+          </button>
+          <div class="h-4 w-px mx-1" style="background: var(--divider);"></div>
+          <button class="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition" title="全屏">
+            <i data-lucide="maximize-2" class="w-4 h-4" :style="{color: var(--text-secondary)}"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Preview Area -->
+      <div class="flex-1 flex items-center justify-center p-8 overflow-auto scrollbar" style="background: var(--surface);">
+        
+        <div :class="['relative transition-all duration-300',
+                        activeDevice === 'phone' ? 'scale-100' : activeDevice === 'tablet' ? 'scale-110' : 'scale-95']"
+             :style="{ width: activeDevice === 'desktop' ? '680px' : activeDevice === 'tablet' ? '440px' : '340px' }">
+          
+          <div class="device-frame rounded-[40px] overflow-hidden relative" style="background: var(--surface);">
+            
+            <!-- Status Bar -->
+            <div class="flex items-center justify-between px-5 py-2 text-xs font-medium" style="background: var(--surface-secondary); color: var(--text-secondary);">
+              <span>9:41</span>
+              <div class="flex items-center gap-1.5">
+                <i data-lucide="signal" class="w-3 h-3"></i>
+                <i data-lucide="wifi" class="w-3 h-3"></i>
+                <i data-lucide="battery-full" class="w-3 h-3"></i>
+              </div>
+            </div>
+
+            <!-- Dynamic Preview Content -->
+            <div class="overflow-y-auto scrollbar" style="height: 580px; background: var(--surface);">
+              
+              <transition name="fade" mode="out-in">
+                <div :key="activeExample" class="animate-slide-up">
+                  
+                  <!-- Meeting Assistant -->
+                  <div v-if="activeExample === 'meeting'">
+                    <div class="px-4 pt-4 pb-3">
+                      <div class="text-xs" style="color: var(--text-tertiary);">会议助手</div>
+                      <div class="text-lg font-medium mt-1" style="color: var(--text-primary);">产品季度评审会</div>
+                    </div>
+
+                    <!-- Agent Status Card -->
+                    <div class="mx-4 mb-4 p-3 rounded-xl flex items-center gap-3" style="background: var(--primary-light); border: 1px solid rgba(59,130,246,0.2);">
+                      <div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style="background: var(--primary);">
+                        <i data-lucide="sparkles" class="w-4 h-4 text-white"></i>
+                      </div>
+                      <div class="flex-1 min-w-0">
+                        <div class="text-xs font-medium" style="color: var(--primary);">Agent 就绪</div>
+                        <div class="text-[11px] mt-0.5" style="color: var(--text-secondary);">正在监控您的日程安排</div>
+                      </div>
+                      <div class="flex gap-0.5">
+                        <span v-for="i in 3" :key="i" class="w-1 h-3 rounded-full pulse-dot" style="background: var(--primary);" :style="{ animationDelay: i * 0.2 + 's' }"></span>
+                      </div>
+                    </div>
+
+                    <!-- Meeting Card -->
+                    <div class="mx-4 mb-4 p-4 rounded-xl" style="background: var(--surface-secondary); border: 1px solid var(--divider);">
+                      <div class="flex items-center justify-between mb-2.5">
+                        <div class="text-xs font-medium" style="color: var(--text-secondary);">即将开始</div>
+                        <span class="hm-tag hm-tag-error">30 分钟后</span>
+                      </div>
+                      <div class="font-medium text-sm" style="color: var(--text-primary);">产品季度评审会</div>
+                      <div class="text-xs mt-1" style="color: var(--text-tertiary);">3号会议室 · 张总、李经理、王工</div>
+                      <div class="flex gap-2.5 mt-3.5">
+                        <button class="hm-button hm-button-primary flex-1 py-2.5 text-xs font-medium">加入会议</button>
+                        <button class="hm-button hm-button-secondary flex-1 py-2.5 text-xs font-medium">查看议程</button>
+                      </div>
+                    </div>
+
+                    <!-- Stats Cards -->
+                    <div class="mx-4 grid grid-cols-2 gap-3">
+                      <div class="p-4 rounded-xl" style="background: var(--surface-secondary); border: 1px solid var(--divider);">
+                        <div class="text-xs" style="color: var(--text-tertiary);">今日会议</div>
+                        <div class="text-2xl font-bold mt-1" style="color: var(--text-primary);">5</div>
+                        <div class="text-[11px] mt-1" style="color: var(--success);">↑ 2 较昨日</div>
+                      </div>
+                      <div class="p-4 rounded-xl" style="background: var(--surface-secondary); border: 1px solid var(--divider);">
+                        <div class="text-xs" style="color: var(--text-tertiary);">待办事项</div>
+                        <div class="text-2xl font-bold mt-1" style="color: var(--text-primary);">12</div>
+                        <div class="text-[11px] mt-1" style="color: var(--warning);">3 项紧急</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Counter -->
+                  <div v-else-if="activeExample === 'counter'">
+                    <div class="px-4 pt-8 pb-4 text-center">
+                      <div class="text-sm" style="color: var(--text-secondary);">签到计数</div>
+                      <div class="text-8xl font-bold mt-6" style="color: var(--primary);">{{ counter }}</div>
+                      <div class="text-xs mt-3" style="color: var(--text-tertiary);">今日签到 · 三年级(2)班</div>
+                      
+                      <div class="flex items-center justify-center gap-6 mt-10">
+                        <button @click="counter = Math.max(0, counter - 1)" 
+                                class="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl font-bold transition active:scale-95"
+                                style="background: var(--surface-secondary); border: 1px solid var(--divider); color: var(--text-primary);">
+                          −
+                        </button>
+                        <button @click="counter++" 
+                                class="w-20 h-20 rounded-2xl flex items-center justify-center text-4xl font-bold text-white transition active:scale-95 shadow-lg"
+                                style="background: var(--primary); box-shadow: 0 4px 16px rgba(59,130,246,0.4);">
+                          +
+                        </button>
+                      </div>
+                      
+                      <button @click="counter = 0" 
+                              class="mt-6 px-8 py-3 rounded-full text-sm font-medium transition hover:opacity-80"
+                              style="background: var(--primary-light); color: var(--primary);">
+                        重置
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Course -->
+                  <div v-else-if="activeExample === 'course'">
+                    <div class="px-4 pt-4 pb-4 space-y-3">
+                      <!-- Course Card -->
+                      <div class="rounded-2xl overflow-hidden" style="background: var(--surface-secondary); border: 1px solid var(--divider);">
+                        <div class="h-36" style="background: linear-gradient(135deg, #3B82F6, #6366F1); display: flex; align-items: center; justify-content: center;">
+                          <i data-lucide="book-open" class="w-12 h-12 text-white/50"></i>
+                        </div>
+                        <div class="p-4">
+                          <div class="font-medium text-sm" style="color: var(--text-primary);">高等数学 · 第九章</div>
+                          <div class="text-xs mt-1" style="color: var(--text-tertiary);">张教授 · 45 分钟</div>
+                          
+                          <div class="mt-4 h-2 rounded-full" style="background: var(--divider);">
+                            <div class="h-full rounded-full transition-all duration-700" style="width: 65%; background: linear-gradient(90deg, var(--primary), var(--primary-hover));"></div>
+                          </div>
+                          <div class="flex justify-between mt-2 text-xs" style="color: var(--text-tertiary);">
+                            <span>进度 65%</span>
+                            <span>18/28 课时</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Stats -->
+                      <div class="grid grid-cols-3 gap-3">
+                        <div class="p-4 rounded-xl text-center" style="background: var(--surface-secondary); border: 1px solid var(--divider);">
+                          <div class="text-xl font-bold" style="color: var(--primary);">92</div>
+                          <div class="text-[10px] mt-1" style="color: var(--text-tertiary);">上次分数</div>
+                        </div>
+                        <div class="p-4 rounded-xl text-center" style="background: var(--surface-secondary); border: 1px solid var(--divider);">
+                          <div class="text-xl font-bold" style="color: var(--success);">A</div>
+                          <div class="text-[10px] mt-1" style="color: var(--text-tertiary);">等级</div>
+                        </div>
+                        <div class="p-4 rounded-xl text-center" style="background: var(--surface-secondary); border: 1px solid var(--divider);">
+                          <div class="text-xl font-bold" style="color: var(--text-primary);">4.8</div>
+                          <div class="text-[10px] mt-1" style="color: var(--text-tertiary);">评分</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Todo -->
+                  <div v-else-if="activeExample === 'todo'">
+                    <div class="px-4 pt-4 pb-4 space-y-2">
+                      <div class="flex items-center gap-2 px-3 py-2.5 rounded-xl" style="background: var(--primary-light);">
+                        <div class="w-5 h-5 rounded-md flex items-center justify-center" style="background: var(--primary);">
+                          <i data-lucide="check" class="w-3 h-3 text-white"></i>
+                        </div>
+                        <span class="text-xs font-medium" style="color: var(--primary);">已完成项 · 3</span>
+                      </div>
+                      
+                      <div v-for="(task, idx) in todoTasks" :key="idx" 
+                           @click="task.done = !task.done"
+                           class="flex items-center gap-3 p-3.5 rounded-xl transition cursor-pointer"
+                           :style="task.done ? 'background: var(--surface-secondary); opacity: 0.7;' : 'background: var(--surface-secondary); border: 1px solid var(--divider);'">
+                        <div class="w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition" 
+                             :style="task.done ? 'background: var(--primary); border-color: var(--primary);' : 'border-color: var(--divider);'">
+                          <i v-if="task.done" data-lucide="check" class="w-3 h-3 text-white"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                          <div class="text-sm truncate" :style="task.done ? { textDecoration: 'line-through', color: 'var(--text-tertiary)' } : {color: 'var(--text-primary)'}">{{ task.text }}</div>
+                          <div class="text-[10px] mt-1 flex gap-3" style="color: var(--text-tertiary);">
+                            <span>{{ task.time }}</span>
+                            <span v-if="task.urgent" style="color: var(--error);">● 紧急</span>
+                          </div>
+                        </div>
+                        <i data-lucide="grip-vertical" class="w-4 h-4 flex-shrink-0" style="color: var(--text-tertiary);"></i>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Bottom Input -->
+                  <div class="px-4 pb-5 pt-2">
+                    <div class="flex items-center gap-2 p-3 rounded-xl" style="background: var(--surface-secondary); border: 1px solid var(--divider);">
+                      <input type="text" placeholder="输入指令或消息..." class="flex-1 bg-transparent text-sm outline-none" style="color: var(--text-primary);" />
+                      <button class="hm-button hm-button-primary w-8 h-8 flex items-center justify-center flex-shrink-0">
+                        <i data-lucide="send" class="w-3.5 h-3.5 text-white"></i>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </transition>
+            </div>
+
+            <!-- Home Indicator -->
+            <div class="flex justify-center py-2" style="background: var(--surface-secondary);">
+              <div class="w-32 h-1 rounded-full" style="background: var(--divider);"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="absolute bottom-4 text-xs" style="color: var(--text-tertiary);">
+          {{ devices.find(d => d.id === activeDevice)?.name }} · HarmonyOS Design
+        </div>
+      </div>
+
+      <!-- Bottom: Message Log -->
+      <div class="border-t" style="border-color: var(--divider); background: var(--surface-secondary);">
+        <div class="flex items-center justify-between px-5 py-2.5 border-b" style="border-color: var(--divider);">
+          <div class="flex items-center gap-2">
+            <i data-lucide="file-terminal" class="w-4 h-4" style="color: var(--primary);"></i>
+            <span class="font-medium text-xs" style="color: var(--text-primary);">消息日志 · Agent ↔ Client</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-[11px]" style="color: var(--text-tertiary);">{{ messages.length }} 条消息</span>
+            <button @click="messages = []" class="text-[11px] px-2 py-1 rounded transition hover:bg-black/5 dark:hover:bg-white/5" style="color: var(--text-tertiary);">清空</button>
+          </div>
+        </div>
+        <div class="h-36 overflow-auto scrollbar px-5 py-2.5" ref="logContainer">
+          <div v-for="(msg, idx) in messages" :key="idx" class="log-line py-0.5 flex gap-3">
+            <span class="text-[10px] flex-shrink-0" style="color: var(--text-tertiary);">{{ msg.time }}</span>
+            <span class="text-[10px] flex-shrink-0 font-semibold w-12" :class="'log-' + msg.type">{{ msg.direction }}</span>
+            <span :class="'log-' + msg.type" class="truncate">{{ msg.content }}</span>
+          </div>
+          <div v-if="messages.length === 0" class="text-xs py-6 text-center" style="color: var(--text-tertiary);">
+            等待 Agent 消息流...
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Status Bar -->
+  <footer class="flex items-center justify-between px-5 py-2 border-t text-xs" style="border-color: var(--divider); background: var(--surface-secondary); color: var(--text-tertiary);">
+    <div class="flex items-center gap-4">
+      <span class="flex items-center gap-1"><i data-lucide="git-branch" class="w-3 h-3"></i> main</span>
+      <span>Agent2UI / A2UI Playground</span>
+      <span class="flex items-center gap-1"><i data-lucide="clock" class="w-3 h-3"></i> {{ lastUpdate }}</span>
+    </div>
+    <div class="flex items-center gap-4">
+      <span class="flex items-center gap-1.5">
+        <span class="w-1.5 h-1.5 rounded-full" style="background: var(--success);"></span>
+        A2UI v0.9.1 · HarmonyOS Design
+      </span>
+      <span>Google A2UI Reference</span>
+    </div>
+  </footer>
+</div>
+
+<!-- Floating Agent Panel -->
+<div v-if="showFloatingPanel" class="floating-panel animate-scale-in">
+  <div class="floating-panel-content w-64 overflow-hidden">
+    <div class="px-4 py-3 border-b flex items-center justify-between" style="border-color: var(--divider); background: var(--primary-light);">
+      <div class="flex items-center gap-2">
+        <div class="w-6 h-6 rounded-full flex items-center justify-center" style="background: var(--primary);">
+          <i data-lucide="sparkles" class="w-3 h-3 text-white"></i>
+        </div>
+        <span class="text-xs font-medium" style="color: var(--primary);">Agent 状态</span>
+      </div>
+      <button @click="showFloatingPanel = false" class="p-1 rounded hover:bg-black/5 dark:hover:bg-white/5">
+        <i data-lucide="x" class="w-3 h-3" style="color: var(--text-tertiary);"></i>
+      </button>
+    </div>
+    <div class="px-4 py-3 space-y-3">
+      <div>
+        <div class="text-[10px] font-medium mb-1" style="color: var(--text-tertiary);">当前任务</div>
+        <div class="text-xs" style="color: var(--text-primary);">{{ agentTask }}</div>
+      </div>
+      <div>
+        <div class="flex items-center justify-between mb-1">
+          <span class="text-[10px] font-medium" style="color: var(--text-tertiary);">进度</span>
+          <span class="text-[10px]" style="color: var(--primary);">{{ agentProgress }}%</span>
+        </div>
+        <div class="hm-progress h-1.5">
+          <div class="hm-progress-fill" :style="{ width: agentProgress + '%' }"></div>
+        </div>
+      </div>
+      <div class="flex gap-2 pt-1">
+        <button class="hm-button hm-button-secondary flex-1 py-1.5 text-[10px] font-medium">暂停</button>
+        <button class="hm-button hm-button-primary flex-1 py-1.5 text-[10px] font-medium">详情</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Floating Toggle Button -->
+<button @click="showFloatingPanel = !showFloatingPanel" 
+        class="fixed bottom-6 right-6 w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition hover:scale-105 active:scale-95"
+        style="background: var(--primary); box-shadow: 0 4px 20px rgba(59,130,246,0.4); z-index: 40;"
+        :title="showFloatingPanel ? '收起 Agent 面板' : '展开 Agent 面板'">
+  <i :data-lucide="showFloatingPanel ? 'chevron-down' : 'sparkles'" class="w-5 h-5 text-white"></i>
+</button>
+
+</div>
+
+<script>
+const { createApp, ref, computed, watch, nextTick, onMounted } = Vue;
+
+const app = createApp({
+  setup() {
+    const theme = ref('light');
+    const activeExample = ref('meeting');
+    const activeDevice = ref('phone');
+    const counter = ref(0);
+    const messages = ref([]);
+    const lastUpdate = ref('刚刚');
+    const logContainer = ref(null);
+    const showFloatingPanel = ref(true);
+    const agentTask = ref('正在等待 Agent 指令...');
+    const agentProgress = ref(0);
+
+    const devices = [
+      { id: 'phone', name: 'iPhone', icon: 'smartphone' },
+      { id: 'tablet', name: 'iPad', icon: 'tablet' },
+      { id: 'desktop', name: '桌面', icon: 'monitor' }
+    ];
+
+    const examples = {
+      meeting: {
+        name: '会议助手', icon: '📋', desc: '会议管理、日程、提醒',
+        schema: { version: "v0.9.1", createSurface: { surfaceId: "main", catalogId: "basic" },
+          updateComponents: { surfaceId: "main", components: [
+            { id: "header", component: "Text", text: "会议助手", variant: "h2" },
+            { id: "status", component: "Row", children: ["agent-icon", "agent-text"] },
+            { id: "agent-icon", component: "Icon", name: "sparkles" },
+            { id: "agent-text", component: "Text", text: "Agent 就绪", variant: "body" },
+            { id: "meeting-card", component: "Card", children: ["meeting-title", "meeting-info", "meeting-actions"] },
+            { id: "meeting-title", component: "Text", text: "产品季度评审会", variant: "h3" },
+            { id: "meeting-info", component: "Text", text: "3号会议室 · 30分钟后开始", variant: "body" },
+            { id: "meeting-actions", component: "Row", children: ["btn-join", "btn-view"] },
+            { id: "btn-join", component: "Button", label: "加入会议", variant: "primary" },
+            { id: "btn-view", component: "Button", label: "查看议程", variant: "secondary" },
+            { id: "stats-row", component: "Row", children: ["stats-today", "stats-pending"] },
+            { id: "stats-today", component: "Card", children: ["today-label", "today-value"] },
+            { id: "today-label", component: "Text", text: "今日会议", variant: "caption" },
+            { id: "today-value", component: "Text", text: "5", variant: "h2" },
+            { id: "stats-pending", component: "Card", children: ["pending-label", "pending-value"] },
+            { id: "pending-label", component: "Text", text: "待办事项", variant: "caption" },
+            { id: "pending-value", component: "Text", text: "12", variant: "h2" }
+          ] } }
+      },
+      counter: {
+        name: '计数器', icon: '🔢', desc: '签到计数场景',
+        schema: { version: "v0.9.1", createSurface: { surfaceId: "counter", catalogId: "basic" },
+          updateComponents: { surfaceId: "counter", components: [
+            { id: "label", component: "Text", text: "签到计数", variant: "body" },
+            { id: "value", component: "Text", text: "0", variant: "display" },
+            { id: "sub-label", component: "Text", text: "今日签到 · 三年级(2)班", variant: "caption" },
+            { id: "actions", component: "Row", children: ["btn-dec", "btn-inc"] },
+            { id: "btn-dec", component: "Button", label: "−", variant: "secondary" },
+            { id: "btn-inc", component: "Button", label: "+", variant: "primary" },
+            { id: "btn-reset", component: "Button", label: "重置", variant: "tertiary" }
+          ] } }
+      },
+      course: {
+        name: '课程详情', icon: '📚', desc: '课程学习进度',
+        schema: { version: "v0.9.1", createSurface: { surfaceId: "course", catalogId: "basic" },
+          updateComponents: { surfaceId: "course", components: [
+            { id: "course-card", component: "Card", children: ["course-title", "course-info", "course-progress"] },
+            { id: "course-title", component: "Text", text: "高等数学 · 第九章", variant: "h3" },
+            { id: "course-info", component: "Text", text: "张教授 · 45分钟", variant: "body" },
+            { id: "course-progress", component: "Progress", value: 65, max: 100, label: "进度" },
+            { id: "stats", component: "Row", children: ["stat-score", "stat-grade", "stat-rating"] },
+            { id: "stat-score", component: "Column", children: ["score-val", "score-label"] },
+            { id: "score-val", component: "Text", text: "92", variant: "h2" },
+            { id: "score-label", component: "Text", text: "上次分数", variant: "caption" },
+            { id: "stat-grade", component: "Column", children: ["grade-val", "grade-label"] },
+            { id: "grade-val", component: "Text", text: "A", variant: "h2" },
+            { id: "grade-label", component: "Text", text: "等级", variant: "caption" },
+            { id: "stat-rating", component: "Column", children: ["rating-val", "rating-label"] },
+            { id: "rating-val", component: "Text", text: "4.8", variant: "h2" },
+            { id: "rating-label", component: "Text", text: "评分", variant: "caption" }
+          ] } }
+      },
+      todo: {
+        name: '待办清单', icon: '✅', desc: '任务管理',
+        schema: { version: "v0.9.1", createSurface: { surfaceId: "todo", catalogId: "basic" },
+          updateComponents: { surfaceId: "todo", components: [
+            { id: "todo-1", component: "Row", children: ["todo-1-check", "todo-1-text"] },
+            { id: "todo-1-check", component: "CheckBox", checked: true },
+            { id: "todo-1-text", component: "Text", text: "完成需求文档评审", variant: "body" },
+            { id: "todo-2", component: "Row", children: ["todo-2-check", "todo-2-text"] },
+            { id: "todo-2-check", component: "CheckBox", checked: false },
+            { id: "todo-2-text", component: "Text", text: "准备周会演示材料", variant: "body" },
+            { id: "todo-3", component: "Row", children: ["todo-3-check", "todo-3-text"] },
+            { id: "todo-3-check", component: "CheckBox", checked: false },
+            { id: "todo-3-text", component: "Text", text: "Review Agent 输出结果", variant: "body" },
+            { id: "todo-4", component: "Row", children: ["todo-4-check", "todo-4-text"] },
+            { id: "todo-4-check", component: "CheckBox", checked: false },
+            { id: "todo-4-text", component: "Text", text: "更新技术选型文档", variant: "body" }
+          ] } }
+      }
+    };
+
+    const todoTasks = ref([
+      { text: '完成需求文档评审', time: '09:00', urgent: false, done: true },
+      { text: '准备周会演示材料', time: '14:00', urgent: true, done: false },
+      { text: 'Review Agent 输出结果', time: '16:00', urgent: true, done: false },
+      { text: '更新技术选型文档', time: '17:30', urgent: false, done: false }
+    ]);
+
+    const currentSchema = ref('');
+    const currentPreview = computed(() => ({
+      meeting: { title: '会议助手' },
+      counter: { title: '签到计数' },
+      course: { title: '课程详情' },
+      todo: { title: '待办清单' }
+    }[activeExample.value]));
+
+    const schemaLines = computed(() => {
+      if (!currentSchema.value) return [];
+      return currentSchema.value.split('\n');
+    });
+
+    const lineCount = computed(() => schemaLines.value.length);
+    const componentCount = computed(() => {
+      try {
+        const schema = JSON.parse(currentSchema.value);
+        return schema.updateComponents?.components?.length || 0;
+      } catch { return 0; }
+    });
+
+    const validationErrors = computed(() => {
+      const errors = [];
+      try {
+        if (!currentSchema.value.trim()) return errors;
+        const schema = JSON.parse(currentSchema.value);
+        if (!schema.version) errors.push({ line: 1, message: '缺少 version 字段' });
+        if (!schema.createSurface && !schema.updateComponents) 
+          errors.push({ line: 1, message: '需要 createSurface 或 updateComponents' });
+        if (schema.updateComponents?.components) {
+          const validTypes = ['Text', 'Button', 'Card', 'Row', 'Column', 'List', 'Image', 
+            'Icon', 'Tabs', 'Modal', 'TextField', 'CheckBox', 'Slider', 'ChoicePicker', 
+            'DateTimeInput', 'Divider', 'Video', 'AudioPlayer', 'Progress'];
+          schema.updateComponents.components.forEach((comp) => {
+            if (comp.component && !validTypes.includes(comp.component)) {
+              errors.push({ line: 1, message: `未知组件类型: ${comp.component}` });
+            }
+          });
+        }
+      } catch (e) {
+        errors.push({ line: 1, message: 'JSON 格式错误: ' + e.message });
+      }
+      return errors;
+    });
+
+    function isKey(line) { return /^\s*"/.test(line) && line.includes(':'); }
+    function getKey(line) { 
+      const match = line.match(/^\s*"([^"]*)"/);
+      return match ? match[0] : line;
+    }
+    function isString(line) { return /:\s*"/.test(line); }
+    function isNumber(line) { return /:\s*\d+/.test(line); }
+    function isBool(line) { return /:\s*(true|false)/.test(line); }
+    function isComment(line) { return line.trim().startsWith('//'); }
+    function isPunct(line) { return /^\s*[{}[\],:]+/.test(line.trim()); }
+
+    function loadExample(id) {
+      activeExample.value = id;
+      const example = examples[id];
+      if (example) {
+        currentSchema.value = JSON.stringify(example.schema, null, 2);
+        logMessage('in', 'system', `加载示例: ${example.name}`);
+        logMessage('out', 'system', `updateComponents → ${example.schema.updateComponents?.components?.length || 0} 个组件`);
+        lastUpdate.value = '刚刚';
+      }
+    }
+
+    function validateSchema() {
+      logMessage('in', 'system', 'Schema 校验中...');
+      setTimeout(() => {
+        if (validationErrors.value.length === 0) {
+          logMessage('out', 'system', '✅ 校验通过 · A2UI v0.9.1 合规');
+        } else {
+          logMessage('out', 'system', `❌ ${validationErrors.value.length} 个问题`);
+        }
+      }, 300);
+    }
+
+    function formatSchema() {
+      try {
+        const parsed = JSON.parse(currentSchema.value);
+        currentSchema.value = JSON.stringify(parsed, null, 2);
+        logMessage('in', 'system', '格式化完成');
+      } catch (e) {
+        logMessage('in', 'system', '❌ JSON 格式错误');
+      }
+    }
+
+    function copySchema() {
+      navigator.clipboard?.writeText(currentSchema.value);
+      logMessage('in', 'system', '📋 已复制到剪贴板');
+    }
+
+    function toggleTheme() {
+      theme.value = theme.value === 'dark' ? 'light' : 'dark';
+      document.body.classList.toggle('dark');
+      document.body.classList.toggle('light');
+      logMessage('in', 'system', `主题切换: ${theme.value}`);
+    }
+
+    function logMessage(direction, type, content) {
+      const now = new Date();
+      const time = now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      const dirLabel = direction === 'in' ? '← IN' : '→ OUT';
+      messages.value.push({ time, direction: dirLabel, type, content });
+      if (logContainer.value) {
+        nextTick(() => { logContainer.value.parentElement.scrollTop = logContainer.value.parentElement.scrollHeight; });
+      }
+    }
+
+    function simulateAgentStream() {
+      agentTask.value = '正在初始化 Agent 环境...';
+      agentProgress.value = 0;
+      const steps = [
+        { delay: 300, progress: 15, task: '创建 Surface 容器...', msg: ['in', 'system', '创建 Surface: main'] },
+        { delay: 900, progress: 30, task: '加载 Catalog 组件库...', msg: ['out', 'system', 'Surface 已创建，加载 Basic Catalog...'] },
+        { delay: 1500, progress: 55, task: '流式传输组件定义...', msg: ['in', 'system', '流式传输 12 个组件定义...'] },
+        { delay: 2200, progress: 80, task: '绑定交互事件...', msg: ['out', 'action', '组件渲染完成，绑定事件处理器...'] },
+        { delay: 2900, progress: 100, task: '就绪 · 等待用户指令', msg: ['in', 'action', 'Agent 就绪，等待用户操作'] }
+      ];
+      steps.forEach(step => {
+        setTimeout(() => {
+          agentProgress.value = step.progress;
+          agentTask.value = step.task;
+          logMessage(...step.msg);
+        }, step.delay);
+      });
+    }
+
+    watch(activeExample, () => {
+      counter.value = 0;
+      todoTasks.value = [
+        { text: '完成需求文档评审', time: '09:00', urgent: false, done: true },
+        { text: '准备周会演示材料', time: '14:00', urgent: true, done: false },
+        { text: 'Review Agent 输出结果', time: '16:00', urgent: true, done: false },
+        { text: '更新技术选型文档', time: '17:30', urgent: false, done: false }
+      ];
+      lastUpdate.value = '刚刚';
+      simulateAgentStream();
+    });
+
+    onMounted(() => {
+      loadExample('meeting');
+      setTimeout(() => { lucide.createIcons(); }, 100);
+      setInterval(() => {
+        const now = new Date();
+        lastUpdate.value = now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+      }, 5000);
+    });
+
+    return {
+      theme, activeExample, activeDevice, counter, messages,
+      lineCount, validationErrors, lastUpdate, logContainer,
+      devices, examples, showFloatingPanel, agentTask, agentProgress,
+      currentSchema, currentPreview, schemaLines, componentCount,
+      todoTasks,
+      loadExample, validateSchema, formatSchema, copySchema, toggleTheme,
+      isKey, getKey, isString, isNumber, isBool, isComment, isPunct
+    };
+  }
+});
+
+app.mount('#app');
+</script>
+
+</body>
+</html>

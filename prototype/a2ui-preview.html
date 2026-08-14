@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A2UI 生成系统 — 大屏交互原型</title>
+<style>
+:root {
+  --brand: #007DFF;
+  --brand-dark: #0069D6;
+  --brand-light: #E8F3FF;
+  --success: #2E7D32;
+  --success-light: #E8F5E9;
+  --warning: #F5A623;
+  --danger: #FF3B30;
+  --bg: #1F1F22;
+  --bg-surface: #2A2A2E;
+  --bg-card: #33333A;
+  --text: #E6E6E6;
+  --text-secondary: #B0B3B8;
+  --text-tertiary: #8A8D93;
+  --border: #3A3A40;
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'HarmonyOS Sans', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+.prototype-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 32px;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.top-bar .left { display: flex; align-items: center; gap: 16px; }
+.top-bar .logo { font-size: 20px; font-weight: 700; color: var(--brand); }
+.top-bar .subtitle { font-size: 14px; color: var(--text-tertiary); }
+
+.scene-switcher {
+  display: flex;
+  gap: 8px;
+  padding: 12px 32px;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+}
+
+.scene-btn {
+  padding: 8px 16px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 14px;
+  white-space: nowrap;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.scene-btn:hover { border-color: var(--brand); color: var(--text); }
+.scene-btn.active { background: var(--brand); color: #fff; border-color: var(--brand); }
+
+.stage {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  gap: 24px;
+  position: relative;
+}
+
+.scene-content { display: none; width: 100%; max-width: 1200px; }
+.scene-content.active { display: block; animation: fadeIn 0.3s ease; }
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes bounce { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+@keyframes pulse-ring { 0% { transform: scale(0.8); opacity: 1; } 100% { transform: scale(2); opacity: 0; } }
+@keyframes wave { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(2); } }
+@keyframes typing { from { width: 0; } to { width: 100%; } }
+@keyframes glow { 0%, 100% { text-shadow: 0 0 20px rgba(0, 125, 255, 0.3); } 50% { text-shadow: 0 0 40px rgba(0, 125, 255, 0.6); } }
+
+/* ============ Counter Scene ============ */
+.counter-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 32px;
+  padding: 48px;
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+}
+
+.counter-value {
+  font-size: clamp(120px, 18vw, 220px);
+  font-weight: 700;
+  color: var(--brand);
+  line-height: 1;
+  text-align: center;
+  transition: transform 0.2s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+.counter-value.bounce { animation: bounce 0.3s ease; }
+.counter-value.glow { animation: glow 1.5s ease infinite; }
+
+.counter-label {
+  font-size: 24px;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.counter-actions {
+  display: flex;
+  gap: 24px;
+  justify-content: center;
+}
+
+.btn-counter {
+  width: 140px;
+  height: 140px;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 48px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+.btn-counter:active { transform: scale(0.95); }
+.btn-increment { background: var(--brand); color: #fff; }
+.btn-increment:hover { background: var(--brand-dark); }
+.btn-decrement { background: var(--bg-surface); color: var(--text); border: 2px solid var(--border); }
+.btn-decrement:hover { border-color: var(--danger); color: var(--danger); }
+
+.btn-reset {
+  width: 200px;
+  height: 72px;
+  background: transparent;
+  border: 2px solid var(--border);
+  color: var(--text-secondary);
+  border-radius: var(--radius-md);
+  font-size: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-reset:hover { border-color: var(--warning); color: var(--warning); }
+
+/* Agent Status Card */
+.agent-status {
+  width: 100%;
+  max-width: 800px;
+  padding: 20px 24px;
+  background: var(--bg-surface);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  transition: all 0.3s;
+  min-height: 72px;
+}
+
+.agent-status.listening { border-color: var(--brand); background: linear-gradient(135deg, var(--bg-surface), rgba(0,125,255,0.1)); }
+.agent-status.processing { border-color: var(--warning); }
+.agent-status.done { border-color: var(--success); background: linear-gradient(135deg, var(--bg-surface), rgba(46,125,50,0.1)); }
+.agent-status.idle { border-color: var(--border); }
+
+.agent-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.agent-icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.agent-status.idle .agent-icon { background: var(--bg-card); }
+.agent-status.listening .agent-icon { background: var(--brand); animation: pulse-ring 1.5s infinite; }
+.agent-status.processing .agent-icon { background: var(--warning); }
+.agent-status.done .agent-icon { background: var(--success); }
+
+.agent-wave {
+  display: flex;
+  gap: 3px;
+  align-items: flex-end;
+  height: 24px;
+}
+.agent-wave span {
+  width: 4px;
+  background: var(--brand);
+  border-radius: 2px;
+  animation: wave 0.8s ease infinite;
+}
+.agent-wave span:nth-child(1) { height: 12px; animation-delay: 0s; }
+.agent-wave span:nth-child(2) { height: 20px; animation-delay: 0.1s; }
+.agent-wave span:nth-child(3) { height: 16px; animation-delay: 0.2s; }
+.agent-wave span:nth-child(4) { height: 22px; animation-delay: 0.3s; }
+.agent-wave span:nth-child(5) { height: 14px; animation-delay: 0.4s; }
+
+.agent-text {
+  flex: 1;
+  font-size: 18px;
+  color: var(--text);
+  line-height: 1.4;
+}
+.agent-text .highlight { color: var(--brand); font-weight: 600; }
+.agent-status.done .agent-text .highlight { color: var(--success); }
+
+.agent-progress {
+  width: 200px;
+  height: 4px;
+  background: var(--bg);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.agent-progress .bar {
+  height: 100%;
+  background: var(--warning);
+  border-radius: 2px;
+  transition: width 0.3s;
+}
+
+/* Context Info */
+.context-bar {
+  display: flex;
+  gap: 16px;
+  padding: 16px 24px;
+  background: var(--bg-surface);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  color: var(--text-tertiary);
+  align-items: center;
+  justify-content: center;
+}
+.context-bar .stat { color: var(--brand); font-weight: 600; }
+
+/* ============ Vote Scene ============ */
+.vote-screen {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 48px;
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+}
+
+.vote-topic {
+  text-align: center;
+  font-size: 32px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.vote-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.vote-option {
+  padding: 32px;
+  background: var(--bg-surface);
+  border-radius: var(--radius-md);
+  border: 2px solid var(--border);
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.vote-option:hover { border-color: var(--brand); transform: translateY(-2px); }
+.vote-option.passed { border-color: var(--success); }
+
+.vote-option .label { font-size: 24px; font-weight: 600; margin-bottom: 8px; }
+.vote-option .count { font-size: 48px; font-weight: 700; }
+.vote-option.approve .count { color: var(--brand); }
+.vote-option.reject .count { color: var(--danger); }
+.vote-option.abstain .count { color: var(--text-tertiary); }
+
+.vote-bar {
+  height: 8px;
+  background: var(--bg);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-top: 12px;
+}
+.vote-bar .fill { height: 100%; border-radius: 4px; transition: width 0.5s; }
+.vote-option.approve .fill { background: var(--brand); }
+.vote-option.reject .fill { background: var(--danger); }
+.vote-option.abstain .fill { background: var(--text-tertiary); }
+
+.vote-summary {
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+  padding: 20px;
+  background: var(--bg-surface);
+  border-radius: var(--radius-md);
+  font-size: 18px;
+}
+
+/* ============ Quiz Scene ============ */
+.quiz-screen {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 48px;
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+}
+
+.quiz-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.quiz-progress {
+  font-size: 16px;
+  color: var(--text-tertiary);
+}
+
+.quiz-timer {
+  font-size: 20px;
+  color: var(--warning);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.quiz-question {
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.5;
+  padding: 24px;
+  background: var(--bg-surface);
+  border-radius: var(--radius-md);
+}
+
+.quiz-options {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.quiz-option {
+  padding: 24px;
+  background: var(--bg-surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 20px;
+  text-align: left;
+  color: var(--text);
+}
+.quiz-option:hover { border-color: var(--brand); }
+.quiz-option.selected { border-color: var(--brand); background: var(--brand-light); color: var(--brand); }
+.quiz-option.correct { border-color: var(--success); background: var(--success-light); color: var(--success); }
+.quiz-option.wrong { border-color: var(--danger); }
+
+.quiz-option .letter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--bg);
+  margin-right: 12px;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+/* ============ Score Board ============ */
+.score-screen {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 48px;
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+}
+
+.score-header {
+  text-align: center;
+  font-size: 28px;
+  font-weight: 600;
+}
+
+.score-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.score-card {
+  padding: 24px 16px;
+  background: var(--bg-surface);
+  border-radius: var(--radius-md);
+  text-align: center;
+  position: relative;
+  transition: all 0.2s;
+}
+.score-card:hover { transform: translateY(-2px); }
+
+.score-card .group-name { font-size: 18px; color: var(--text-secondary); margin-bottom: 8px; }
+.score-card .score-value { font-size: 56px; font-weight: 700; color: var(--brand); line-height: 1; }
+.score-card .rank { font-size: 24px; margin: 8px 0; }
+.score-card .history { font-size: 14px; color: var(--text-tertiary); }
+
+.score-card.rank-1 { background: linear-gradient(135deg, rgba(255,193,7,0.15), var(--bg-surface)); border: 2px solid #FFC107; }
+.score-card.rank-2 { background: linear-gradient(135deg, rgba(158,158,158,0.15), var(--bg-surface)); border: 2px solid #9E9E9E; }
+.score-card.rank-3 { background: linear-gradient(135deg, rgba(205,127,50,0.15), var(--bg-surface)); border: 2px solid #CD7F32; }
+
+.score-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.btn-score {
+  padding: 12px 20px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+.btn-score:hover { border-color: var(--brand); color: var(--brand); }
+.btn-score.primary { background: var(--brand); border-color: var(--brand); }
+.btn-score.danger { border-color: var(--danger); color: var(--danger); }
+.btn-score.danger:hover { background: var(--danger); color: #fff; }
+
+/* Voice input button */
+.voice-btn {
+  position: fixed;
+  bottom: 32px;
+  right: 32px;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: var(--brand);
+  color: #fff;
+  border: none;
+  font-size: 28px;
+  cursor: pointer;
+  box-shadow: 0 8px 32px rgba(0,125,255,0.4);
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.voice-btn:hover { transform: scale(1.05); }
+.voice-btn.active { animation: pulse-ring 1.5s infinite; background: var(--danger); }
+
+/* Toast */
+.toast {
+  position: fixed;
+  top: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 12px 24px;
+  background: var(--success);
+  color: #fff;
+  border-radius: var(--radius-md);
+  font-size: 16px;
+  font-weight: 600;
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+  z-index: 1000;
+}
+.toast.show { opacity: 1; }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .vote-grid { grid-template-columns: 1fr; }
+  .score-grid { grid-template-columns: repeat(2, 1fr); }
+  .counter-actions { flex-direction: column; align-items: center; }
+  .btn-counter { width: 120px; height: 120px; font-size: 36px; }
+}
+</style>
+</head>
+<body>
+
+<div class="prototype-container">
+
+  <header class="top-bar">
+    <div class="left">
+      <div class="logo">🎨 A2UI</div>
+      <div class="subtitle">Agent-to-UI 生成系统 · 大屏交互原型</div>
+    </div>
+    <div class="subtitle" id="clock">--:--:--</div>
+  </header>
+
+  <nav class="scene-switcher">
+    <button class="scene-btn active" data-scene="counter">🔢 签到计数</button>
+    <button class="scene-btn" data-scene="vote">🗳️ 投票表决</button>
+    <button class="scene-btn" data-scene="quiz">📝 课堂答题</button>
+    <button class="scene-btn" data-scene="score">📊 分组计分</button>
+  </nav>
+
+  <main class="stage">
+
+    <!-- Counter Scene -->
+    <section class="scene-content active" id="scene-counter">
+      <div class="counter-screen">
+        <div>
+          <div class="counter-value" id="counterValue">0</div>
+          <div class="counter-label">签到人数</div>
+        </div>
+
+        <div class="counter-actions">
+          <button class="btn-counter btn-decrement" id="btnDec" aria-label="减1">−</button>
+          <button class="btn-counter btn-increment" id="btnInc" aria-label="加1">+</button>
+        </div>
+
+        <button class="btn-reset" id="btnReset">↻ 重置</button>
+
+        <div class="context-bar">
+          <span>📊 今日统计: <span class="stat" id="todayStat">0</span> 人</span>
+          <span>·</span>
+          <span>👥 课堂: 三年级(2)班</span>
+        </div>
+
+        <div class="agent-status idle" id="agentStatus">
+          <div class="agent-row">
+            <div class="agent-icon">🤖</div>
+            <div class="agent-text" id="agentText">就绪 · 点击右下🎤按钮体验语音交互</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Vote Scene -->
+    <section class="scene-content" id="scene-vote">
+      <div class="vote-screen">
+        <div class="vote-topic">议题: 是否通过 Q3 预算方案？</div>
+
+        <div class="vote-grid">
+          <div class="vote-option approve" data-option="approve">
+            <div class="label">✓ 赞成</div>
+            <div class="count" id="approveCount">12</div>
+            <div class="vote-bar"><div class="fill" id="approveBar" style="width:60%"></div></div>
+          </div>
+          <div class="vote-option reject" data-option="reject">
+            <div class="label">✗ 反对</div>
+            <div class="count" id="rejectCount">5</div>
+            <div class="vote-bar"><div class="fill" id="rejectBar" style="width:25%"></div></div>
+          </div>
+          <div class="vote-option abstain" data-option="abstain">
+            <div class="label">○ 弃权</div>
+            <div class="count" id="abstainCount">3</div>
+            <div class="vote-bar"><div class="fill" id="abstainBar" style="width:15%"></div></div>
+          </div>
+        </div>
+
+        <div class="vote-summary">
+          <span>总计: <strong id="voteTotal">20</strong> 票</span>
+          <span>·</span>
+          <span>法定人数: <strong>10</strong></span>
+          <span>·</span>
+          <span>结果: <strong style="color:var(--success)">✅ 已通过</strong></span>
+        </div>
+
+        <div class="agent-status idle">
+          <div class="agent-row">
+            <div class="agent-icon">🤖</div>
+            <div class="agent-text">就绪 · 说"赞成+3"或触控点击投票</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Quiz Scene -->
+    <section class="scene-content" id="scene-quiz">
+      <div class="quiz-screen">
+        <div class="quiz-header">
+          <div class="quiz-progress">第 <strong id="quizCurrent">3</strong>/10 题</div>
+          <div class="quiz-timer">⏱ <span id="quizTimer">30</span>s</div>
+        </div>
+
+        <div class="quiz-question" id="quizQuestion">下列哪个是 A2UI 的核心概念？</div>
+
+        <div class="quiz-options" id="quizOptions">
+          <button class="quiz-option" data-answer="A"><span class="letter">A</span>Agent 意图驱动 UI 生成</button>
+          <button class="quiz-option" data-answer="B"><span class="letter">B</span>传统 XML 布局</button>
+          <button class="quiz-option" data-answer="C"><span class="letter">C</span>手写 Kotlin 代码</button>
+          <button class="quiz-option" data-answer="D"><span class="letter">D</span>固定模板</button>
+        </div>
+
+        <div class="context-bar">
+          <span>📊 已答: <span class="stat">25</span>/30</span>
+          <span>·</span>
+          <span>✅ 正确率: <span class="stat">85%</span></span>
+        </div>
+
+        <div class="agent-status idle">
+          <div class="agent-row">
+            <div class="agent-icon">🤖</div>
+            <div class="agent-text">就绪 · 说"下一题"或触控选择答案</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Score Board Scene -->
+    <section class="scene-content" id="scene-score">
+      <div class="score-screen">
+        <div class="score-header">📊 分组计分板 · 实验任务</div>
+
+        <div class="score-grid">
+          <div class="score-card rank-1" data-group="A">
+            <div class="group-name">🥇 组 A</div>
+            <div class="score-value">35</div>
+            <div class="rank">🥇</div>
+            <div class="history">+10 +5 +20</div>
+          </div>
+          <div class="score-card rank-2" data-group="B">
+            <div class="group-name">🥈 组 B</div>
+            <div class="score-value">28</div>
+            <div class="rank">🥈</div>
+            <div class="history">+8 +12 +8</div>
+          </div>
+          <div class="score-card rank-3" data-group="C">
+            <div class="group-name">🥉 组 C</div>
+            <div class="score-value">42</div>
+            <div class="rank">🥉</div>
+            <div class="history">+15 +7 +20</div>
+          </div>
+          <div class="score-card" data-group="D">
+            <div class="group-name">组 D</div>
+            <div class="score-value">19</div>
+            <div class="rank">4th</div>
+            <div class="history">+5 +9 +5</div>
+          </div>
+        </div>
+
+        <div class="score-actions">
+          <button class="btn-score primary">+ 加分</button>
+          <button class="btn-score">− 减分</button>
+          <button class="btn-score">📋 导出</button>
+          <button class="btn-score danger">↻ 重置</button>
+        </div>
+
+        <div class="agent-status idle">
+          <div class="agent-row">
+            <div class="agent-icon">🤖</div>
+            <div class="agent-text">就绪 · 说"给组A加5分"或触控操作</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <button class="voice-btn" id="voiceBtn" title="语音交互">🎤</button>
+
+  <div class="toast" id="toast">操作成功</div>
+
+</div>
+
+<script>
+// ====== State ======
+const state = {
+  counter: 0,
+  agentStatus: 'idle',
+  quizTimer: 30,
+  quizInterval: null,
+};
+
+// ====== Clock ======
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent = now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+setInterval(updateClock, 1000); updateClock();
+
+// ====== Scene Switcher ======
+document.querySelectorAll('.scene-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const scene = btn.dataset.scene;
+    document.querySelectorAll('.scene-btn').forEach(b => b.classList.toggle('active', b === btn));
+    document.querySelectorAll('.scene-content').forEach(s => s.classList.toggle('active', s.id === 'scene-' + scene));
+    showToast('已切换至: ' + btn.textContent.trim());
+  });
+});
+
+// ====== Counter Logic ======
+const counterValue = document.getElementById('counterValue');
+const todayStat = document.getElementById('todayStat');
+
+function updateCounter(newVal, animate = true) {
+  state.counter = newVal;
+  counterValue.textContent = newVal;
+  todayStat.textContent = newVal;
+  if (animate) {
+    counterValue.classList.remove('bounce');
+    void counterValue.offsetWidth;
+    counterValue.classList.add('bounce');
+  }
+}
+
+document.getElementById('btnInc').addEventListener('click', () => {
+  updateCounter(state.counter + 1);
+  setAgentStatus('idle', '就绪 · 已加 1');
+});
+
+document.getElementById('btnDec').addEventListener('click', () => {
+  if (state.counter > 0) updateCounter(state.counter - 1);
+  setAgentStatus('idle', '就绪 · 已减 1');
+});
+
+document.getElementById('btnReset').addEventListener('click', () => {
+  updateCounter(0);
+  setAgentStatus('done', '✅ 已重置为 0');
+  showToast('已重置');
+});
+
+// ====== Agent Status ======
+const agentStatusEl = document.getElementById('agentStatus');
+const agentTextEl = document.getElementById('agentText');
+
+function setAgentStatus(status, text) {
+  state.agentStatus = status;
+  agentStatusEl.className = 'agent-status ' + status;
+
+  let icon = '🤖';
+  if (status === 'listening') {
+    agentTextEl.innerHTML = '<div class="agent-wave"><span></span><span></span><span></span><span></span><span></span></div><span style="margin-left:12px">' + text + '</span>';
+  } else if (status === 'processing') {
+    icon = '⚡';
+    agentTextEl.innerHTML = text + '<div class="agent-progress"><div class="bar" id="agentBar" style="width:0%"></div></div>';
+  } else if (status === 'done') {
+    icon = '✅';
+    agentTextEl.textContent = text;
+  } else {
+    agentTextEl.textContent = text;
+  }
+  agentStatusEl.querySelector('.agent-icon').textContent = icon;
+}
+
+function simulateAgentCommand(cmd) {
+  setAgentStatus('listening', '🔊 "' + cmd + '"');
+
+  setTimeout(() => {
+    setAgentStatus('processing', '⚡ 正在执行: ' + cmd);
+
+    setTimeout(() => {
+      let result = '';
+      if (cmd.includes('归零') || cmd.includes('重置')) {
+        updateCounter(0);
+        result = '已重置为 0';
+      } else if (cmd.includes('加')) {
+        const match = cmd.match(/加(\d+)/) || cmd.match(/加上(\d+)/);
+        const n = match ? parseInt(match[1]) : 1;
+        updateCounter(state.counter + n);
+        result = '+' + n + ' → 当前: ' + state.counter;
+      } else if (cmd.includes('减')) {
+        const match = cmd.match(/减(\d+)/) || cmd.match(/减去(\d+)/);
+        const n = match ? parseInt(match[1]) : 1;
+        updateCounter(Math.max(0, state.counter - n));
+        result = '-' + n + ' → 当前: ' + state.counter;
+      } else if (cmd.includes('设为') || cmd.includes('已到')) {
+        const match = cmd.match(/(\d+)/);
+        if (match) {
+          updateCounter(parseInt(match[1]));
+          result = '已设为 ' + match[1];
+        }
+      }
+
+      setAgentStatus('done', '✅ 已执行: ' + result + '  🔔');
+      showToast(result);
+
+      setTimeout(() => setAgentStatus('idle', '就绪 · 点击右下🎤按钮体验语音交互'), 2000);
+    }, 1200);
+  }, 800);
+}
+
+// ====== Voice Simulation ======
+const voiceBtn = document.getElementById('voiceBtn');
+const commands = ['加上5', '加上10', '减3', '归零', '已到30人'];
+let voiceTimer = null;
+
+voiceBtn.addEventListener('click', () => {
+  if (voiceBtn.classList.contains('active')) {
+    voiceBtn.classList.remove('active');
+    if (voiceTimer) { clearTimeout(voiceTimer); voiceTimer = null; }
+    return;
+  }
+  voiceBtn.classList.add('active');
+  setAgentStatus('listening', '🔊 正在监听...');
+
+  voiceTimer = setTimeout(() => {
+    voiceBtn.classList.remove('active');
+    const cmd = commands[Math.floor(Math.random() * commands.length)];
+    simulateAgentCommand(cmd);
+  }, 2000);
+});
+
+// ====== Vote Logic ======
+document.querySelectorAll('.vote-option').forEach(opt => {
+  opt.addEventListener('click', () => {
+    const type = opt.dataset.option;
+    const el = document.getElementById(type + 'Count');
+    el.textContent = parseInt(el.textContent) + 1;
+    updateVoteBars();
+    showToast('已投: ' + opt.querySelector('.label').textContent.trim());
+  });
+});
+
+function updateVoteBars() {
+  const a = parseInt(document.getElementById('approveCount').textContent);
+  const r = parseInt(document.getElementById('rejectCount').textContent);
+  const b = parseInt(document.getElementById('abstainCount').textContent);
+  const total = a + r + b;
+  document.getElementById('voteTotal').textContent = total;
+  document.getElementById('approveBar').style.width = (a / total * 100) + '%';
+  document.getElementById('rejectBar').style.width = (r / total * 100) + '%';
+  document.getElementById('abstainBar').style.width = (b / total * 100) + '%';
+}
+
+// ====== Quiz Logic ======
+document.querySelectorAll('.quiz-option').forEach(opt => {
+  opt.addEventListener('click', () => {
+    const answer = opt.dataset.answer;
+    document.querySelectorAll('.quiz-option').forEach(o => o.classList.remove('selected', 'correct', 'wrong'));
+    if (answer === 'A') {
+      opt.classList.add('correct');
+      showToast('✅ 正确！');
+    } else {
+      opt.classList.add('wrong');
+      document.querySelector('.quiz-option[data-answer="A"]').classList.add('correct');
+      showToast('❌ 答案是 A');
+    }
+  });
+});
+
+function startQuizTimer() {
+  if (state.quizInterval) clearInterval(state.quizInterval);
+  state.quizTimer = 30;
+  const timerEl = document.getElementById('quizTimer');
+  timerEl.textContent = state.quizTimer;
+  state.quizInterval = setInterval(() => {
+    state.quizTimer--;
+    timerEl.textContent = state.quizTimer;
+    if (state.quizTimer <= 10) timerEl.style.color = 'var(--danger)';
+    if (state.quizTimer <= 0) {
+      clearInterval(state.quizInterval);
+      showToast('⏱ 时间到！');
+    }
+  }, 1000);
+}
+startQuizTimer();
+
+// ====== Score Board ======
+document.querySelectorAll('.score-card').forEach(card => {
+  card.addEventListener('click', () => {
+    const group = card.dataset.group;
+    showToast('点击了 ' + group + ' - 可通过Agent操作');
+    setAgentStatus('listening', '🔊 请输入对 ' + group + ' 组的操作...');
+  });
+});
+
+// ====== Toast ======
+const toast = document.getElementById('toast');
+let toastTimer = null;
+function showToast(msg) {
+  toast.textContent = msg;
+  toast.classList.add('show');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove('show'), 2500);
+}
+</script>
+
+</body>
+</html>

@@ -1,18 +1,18 @@
 """
-A2UI 6-Agent 流水线验证脚本
-验证端到端编排正确性：产物数量、消费者链路、重试逻辑、条件边
+A2UI 6-Agent 流水线验证脚本 v2.0
+验证端到端编排正确性：产物数量、消费者链路、重试逻辑、条件边、质量门控、成本追踪
 """
 
 import sys
-from pipeline import PipelineOrchestrator, _match_profile
+from pipeline import PipelineOrchestrator, _match_profile, TOKEN_BUDGET
 
 
 def validate_pipeline(scene: str):
-    print(f"\n{'='*60}")
+    print(f"\n{'='*70}")
     print(f"验证流水线: {scene}")
-    print(f"{'='*60}")
+    print(f"{'='*70}")
 
-    orchestrator = PipelineOrchestrator()
+    orchestrator = PipelineOrchestrator(enable_hitl=False)
     result = orchestrator.run(scene)
     artifacts = result.get("artifacts", {})
     messages = result.get("messages", [])
@@ -26,7 +26,7 @@ def validate_pipeline(scene: str):
         errors.append(f"期望 result_status=pass, 实际={status}")
 
     # 2. 产物数量
-    expected_min = 11  # PM(2) + UX(3) + A2UI(3) + Dev(2) + Review(2) + Test(2) - 去重前
+    expected_min = 11
     actual = len(artifacts)
     print(f"[2] 产物数量: {actual}")
     if actual < expected_min:
@@ -117,13 +117,61 @@ def validate_pipeline(scene: str):
     if dev_retries > 3:
         errors.append(f"重试次数超过 3: dev={dev_retries}")
 
-    # 8. Review 结果
+    # 8. 条件边结果
     print(f"\n[8] 条件边结果:")
     print(f"    review_result: {result.get('review_result', 'N/A')}")
     print(f"    test_result: {result.get('test_result', 'N/A')}")
 
+    # 9. 质量门控
+    print(f"\n[9] 质量门控评分:")
+    quality_scores = result.get("quality_scores", {})
+    for node_id, score in quality_scores.items():
+        icon = "✅" if score >= 60 else "⚠️"
+        print(f"    {icon} {node_id}: {score}/100")
+
+    if not quality_scores:
+        errors.append("缺少质量评分数据")
+
+    # 10. 成本追踪
+    print(f"\n[10] Token/成本追踪:")
+    token_usage = result.get("token_usage", {})
+    total_tokens = token_usage.get("total", 0)
+    budget = token_usage.get("budget_limit", TOKEN_BUDGET)
+    cost = result.get("total_cost_usd", 0.0)
+    print(f"    Token 消耗: {total_tokens:,} / {budget:,} ({total_tokens/budget*100:.1f}%)")
+    print(f"    预估成本: ${cost:.4f}")
+
+    # 11. 节点执行日志
+    print(f"\n[11] 节点执行日志:")
+    node_logs = result.get("node_execution_logs", {})
+    for node_id, entries in node_logs.items():
+        for entry in entries:
+            print(f"    [{entry['node_label']}] duration={entry['duration_ms']}ms, score={entry['quality_score']}, gate={entry['quality_gate']}")
+
+    if not node_logs:
+        errors.append("缺少节点执行日志")
+
+    # 12. 执行日志完整性
+    print(f"\n[12] 执行日志数量: {len(result.get('execution_logs', []))}")
+
+    # 13. 防护指标
+    step_count = result.get("step_count", 0)
+    print(f"\n[13] 防护指标:")
+    print(f"    步骤数: {step_count}")
+    if step_count > 40:
+        errors.append(f"步骤数超过 40: {step_count}")
+        print(f"    ⚠️ 步骤数超限 ({step_count}/40)")
+
+    cb_status = result.get("circuit_breaker_status", {})
+    halted_nodes = [n for n, s in cb_status.items() if s == "HALT"]
+    if halted_nodes:
+        errors.append(f"熔断器 HALT: {halted_nodes}")
+        print(f"    ⚠️ 熔断器 HALT: {halted_nodes}")
+    else:
+        print(f"    ✅ 所有节点熔断器正常")
+
     # 总结
-    print(f"\n{'='*60}")
+    print(f"\n{'='*70}")
     if errors:
         print(f"❌ 验证失败 ({len(errors)} 个错误):")
         for e in errors:
@@ -147,7 +195,7 @@ def main():
         if not passed:
             all_passed = False
 
-    print(f"\n{'='*60}")
+    print(f"\n{'='*70}")
     if all_passed:
         print("🎉 所有场景验证通过!")
     else:
