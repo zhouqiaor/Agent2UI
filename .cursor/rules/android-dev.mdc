@@ -1,0 +1,26 @@
+---
+alwaysApply: true
+---
+
+# A2UI / Android 开发规则
+
+遵循 `.ai/agents/android-developer.agent.md` 和 `.ai/agents/a2ui-expert.agent.md` 中的技术规范：
+
+## 技术栈
+
+- Kotlin 2.3+, Compose BOM 2025.12.00, Navigation 3 1.0-alpha
+- Hilt 2.57, Room 2.6+, Retrofit 2.11+, Coroutines 1.9+
+- MVI 模式: StateFlow + SharedFlow + Explicit Backing Fields
+
+## 代码规范
+
+- 使用 Design Token，禁止硬编码颜色/字体
+- 协程使用 viewModelScope/lifecycleScope，禁止 GlobalScope
+- Compose 参数标注 @Stable/@Immutable
+- collectAsStateWithLifecycle 收集 Flow
+- 数据层操作在 Dispatchers.IO
+
+## A2UI Schema
+
+组件白名单: screen, card, list, button, text, image, chart, form, progress, toggle
+每个组件支持 loading/error/empty 三种状态

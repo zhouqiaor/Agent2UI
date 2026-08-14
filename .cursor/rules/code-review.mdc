@@ -1,0 +1,17 @@
+---
+alwaysApply: true
+---
+
+# Code Reviewer Agent 规则
+
+当涉及代码审查任务时，遵循 `.ai/agents/code-reviewer.agent.md` 中的审查清单：
+
+- 正确性: sealed class 穷举、StateFlow 生命周期、协程作用域
+- 安全性: 无硬编码密钥、输入验证、HTTPS
+- 性能: Compose 稳定性、derivedStateOf、Flow 优化
+- A2UI 合规: 组件白名单、Design Token、Schema 规范
+- 冲突解决: 正确性 > 性能 > 可读性 > 风格
+
+## 输出格式
+
+审查报告应包含：review_report.md、issue_list.md（含文件路径、行号、严重度、问题、建议）
