@@ -1,0 +1,430 @@
+import React, { useState, useCallback, useRef } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  Pressable,
+  StyleSheet,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+  ActivityIndicator,
+} from 'react-native';
+import { FontAwesome6 } from '@expo/vector-icons';
+import { Screen } from '@/components/Screen';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import SSE from 'react-native-sse';
+import { A2UIRenderer } from '@/components/a2ui/A2UIRenderer';
+import type { A2UIComponent, ChatMessage } from '@/utils/a2ui-types';
+
+const EXPO_PUBLIC_BACKEND_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_BASE_URL;
+
+interface AssistantMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  text: string;
+  components: A2UIComponent[];
+}
+
+export default function AssistantScreen() {
+  const insets = useSafeAreaInsets();
+  const [messages, setMessages] = useState<AssistantMessage[]>([
+    {
+      id: 'welcome',
+      role: 'assistant',
+      text: '你好！我是 MeetFlow AI 助手。我可以帮你创建投票、生成议程、管理任务等。试试对我说"创建一个投票"或"生成议程"吧！',
+      components: [],
+    },
+  ]);
+  const [inputText, setInputText] = useState('');
+  const [isStreaming, setIsStreaming] = useState(false);
+  const scrollViewRef = useRef<ScrollView>(null);
+  const sseRef = useRef<SSE | null>(null);
+
+  const sendMessage = useCallback(() => {
+    if (!inputText.trim() || isStreaming) return;
+
+    const userMessage: AssistantMessage = {
+      id: `user_${Date.now()}`,
+      role: 'user',
+      text: inputText.trim(),
+      components: [],
+    };
+
+    setMessages((prev) => [...prev, userMessage]);
+    const currentInput = inputText.trim();
+    setInputText('');
+    setIsStreaming(true);
+
+    // 创建空的 assistant message
+    const assistantId = `assistant_${Date.now()}`;
+    setMessages((prev) => [
+      ...prev,
+      { id: assistantId, role: 'assistant', text: '', components: [] },
+    ]);
+
+    const url = `${EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/assistant/chat`;
+
+    /**
+     * 服务端文件：server/src/routes/assistant.ts
+     * 接口：POST /api/v1/assistant/chat
+     * Body 参数：message: string, context?: string
+     */
+    const sse = new SSE(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: currentInput }),
+    });
+
+    sseRef.current = sse;
+    let accumulatedText = '';
+
+    sse.addEventListener('message', (event) => {
+      if (event.data === '[DONE]') {
+        setIsStreaming(false);
+        sse.close();
+        return;
+      }
+
+      try {
+        const item = JSON.parse(event.data as string);
+
+        if (item.type === 'text_chunk') {
+          accumulatedText += item.data;
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === assistantId
+                ? { ...msg, text: accumulatedText }
+                : msg
+            )
+          );
+        } else if (item.type === 'component') {
+          const component = item.data as A2UIComponent;
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === assistantId
+                ? { ...msg, components: [...msg.components, component] }
+                : msg
+            )
+          );
+        }
+      } catch (e) {
+        console.warn('Failed to parse assistant response:', e);
+      }
+    });
+
+    sse.addEventListener('error', () => {
+      setIsStreaming(false);
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === assistantId
+            ? { ...msg, text: msg.text || '抱歉，出现了错误，请重试。' }
+            : msg
+        )
+      );
+    });
+  }, [inputText, isStreaming]);
+
+  const quickActions = [
+    { label: '创建投票', icon: 'chart-bar' as const, text: '创建一个投票' },
+    { label: '生成议程', icon: 'list-check' as const, text: '生成一个会议议程' },
+    { label: '任务列表', icon: 'clipboard-list' as const, text: '创建一个任务列表' },
+  ];
+
+  return (
+    <Screen safeAreaEdges={['left', 'right', 'bottom']}>
+      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
+        <View style={styles.headerLeft}>
+          <View style={styles.aiIconContainer}>
+            <FontAwesome6 name="robot" size={20} color="#4F46E5" />
+          </View>
+          <View>
+            <Text style={styles.headerTitle}>AI 助手</Text>
+            <Text style={styles.headerStatus}>
+              {isStreaming ? '正在生成...' : '在线'}
+            </Text>
+          </View>
+        </View>
+      </View>
+
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={0}
+      >
+        <ScrollView
+          ref={scrollViewRef}
+          style={styles.flex}
+          contentContainerStyle={styles.messagesContent}
+          onContentSizeChange={() =>
+            scrollViewRef.current?.scrollToEnd({ animated: true })
+          }
+        >
+          {messages.map((msg) => (
+            <View
+              key={msg.id}
+              style={[
+                styles.messageRow,
+                msg.role === 'user' ? styles.userRow : styles.assistantRow,
+              ]}
+            >
+              {msg.role === 'assistant' && (
+                <View style={styles.aiAvatar}>
+                  <FontAwesome6 name="robot" size={14} color="#4F46E5" />
+                </View>
+              )}
+              <View
+                style={[
+                  styles.messageBubble,
+                  msg.role === 'user'
+                    ? styles.userBubble
+                    : styles.assistantBubble,
+                ]}
+              >
+                {msg.text ? (
+                  <Text
+                    style={[
+                      styles.messageText,
+                      msg.role === 'user'
+                        ? styles.userText
+                        : styles.assistantText,
+                    ]}
+                  >
+                    {msg.text}
+                  </Text>
+                ) : null}
+                {msg.components.length > 0 && (
+                  <View style={styles.componentsContainer}>
+                    <A2UIRenderer components={msg.components} />
+                  </View>
+                )}
+              </View>
+            </View>
+          ))}
+
+          {isStreaming && messages[messages.length - 1]?.text === '' && (
+            <View style={[styles.messageRow, styles.assistantRow]}>
+              <View style={styles.aiAvatar}>
+                <FontAwesome6 name="robot" size={14} color="#4F46E5" />
+              </View>
+              <View style={styles.assistantBubble}>
+                <ActivityIndicator size="small" color="#4F46E5" />
+              </View>
+            </View>
+          )}
+
+          {/* Quick Actions */}
+          {messages.length <= 1 && !isStreaming && (
+            <View style={styles.quickActions}>
+              <Text style={styles.quickActionsTitle}>快捷操作</Text>
+              <View style={styles.quickActionsRow}>
+                {quickActions.map((action) => (
+                  <Pressable
+                    key={action.label}
+                    style={styles.quickActionBtn}
+                    onPress={() => {
+                      setInputText(action.text);
+                    }}
+                  >
+                    <FontAwesome6 name={action.icon} size={14} color="#4F46E5" />
+                    <Text style={styles.quickActionText}>{action.label}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+          )}
+
+          <View style={{ height: 20 }} />
+        </ScrollView>
+
+        {/* Input Bar */}
+        <View style={[styles.inputBar, { paddingBottom: insets.bottom + 8 }]}>
+          <View style={styles.inputContainer}>
+            <TextInput
+              style={styles.textInput}
+              placeholder="输入消息..."
+              placeholderTextColor="#94A3B8"
+              value={inputText}
+              onChangeText={setInputText}
+              onSubmitEditing={sendMessage}
+              returnKeyType="send"
+              editable={!isStreaming}
+              multiline
+            />
+            <Pressable
+              style={[
+                styles.sendBtn,
+                (!inputText.trim() || isStreaming) && styles.sendBtnDisabled,
+              ]}
+              onPress={sendMessage}
+              disabled={!inputText.trim() || isStreaming}
+            >
+              <FontAwesome6
+                name="paper-plane"
+                size={16}
+                color={
+                  !inputText.trim() || isStreaming ? '#CBD5E1' : '#FFFFFF'
+                }
+              />
+            </Pressable>
+          </View>
+        </View>
+      </KeyboardAvoidingView>
+    </Screen>
+  );
+}
+
+const styles = StyleSheet.create({
+  flex: {
+    flex: 1,
+  },
+  header: {
+    paddingHorizontal: 20,
+    paddingBottom: 12,
+    backgroundColor: '#F0F0F3',
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  aiIconContainer: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    backgroundColor: 'rgba(79,70,229,0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1E293B',
+  },
+  headerStatus: {
+    fontSize: 12,
+    color: '#10B981',
+    fontWeight: '500',
+  },
+  messagesContent: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+  },
+  messageRow: {
+    flexDirection: 'row',
+    marginBottom: 16,
+    maxWidth: '90%',
+  },
+  userRow: {
+    alignSelf: 'flex-end',
+  },
+  assistantRow: {
+    alignSelf: 'flex-start',
+  },
+  aiAvatar: {
+    width: 30,
+    height: 30,
+    borderRadius: 10,
+    backgroundColor: 'rgba(79,70,229,0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
+    marginTop: 4,
+  },
+  messageBubble: {
+    borderRadius: 18,
+    padding: 14,
+    maxWidth: '100%',
+  },
+  userBubble: {
+    backgroundColor: '#4F46E5',
+    borderBottomRightRadius: 6,
+  },
+  assistantBubble: {
+    backgroundColor: '#F0F0F3',
+    borderBottomLeftRadius: 6,
+    shadowColor: '#D1D9E6',
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  messageText: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  userText: {
+    color: '#FFFFFF',
+  },
+  assistantText: {
+    color: '#334155',
+  },
+  componentsContainer: {
+    marginTop: 10,
+  },
+  quickActions: {
+    marginTop: 16,
+    paddingHorizontal: 4,
+  },
+  quickActionsTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#94A3B8',
+    marginBottom: 10,
+  },
+  quickActionsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  quickActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(79,70,229,0.06)',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(79,70,229,0.12)',
+  },
+  quickActionText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#4F46E5',
+  },
+  inputBar: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    backgroundColor: '#F0F0F3',
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    backgroundColor: '#E8E8EB',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.6)',
+  },
+  textInput: {
+    flex: 1,
+    fontSize: 15,
+    color: '#1E293B',
+    maxHeight: 100,
+    paddingVertical: 4,
+  },
+  sendBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#4F46E5',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 8,
+  },
+  sendBtnDisabled: {
+    backgroundColor: '#E8E8EB',
+  },
+});
