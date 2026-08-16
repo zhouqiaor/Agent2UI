@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,9 @@ import { Screen } from '@/components/Screen';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSafeRouter } from '@/hooks/useSafeRouter';
 import { useFocusEffect } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Onboarding } from '@/components/Onboarding';
+import { MeetingCardSkeleton } from '@/components/Skeleton';
 import type { Meeting } from '@/utils/a2ui-types';
 
 const EXPO_PUBLIC_BACKEND_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_BASE_URL;
@@ -32,6 +35,17 @@ export default function MeetingsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<FilterType>('all');
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [onboardingChecked, setOnboardingChecked] = useState(false);
+
+  useEffect(() => {
+    AsyncStorage.getItem('@meetflow_onboarding_done').then((value) => {
+      if (!value) {
+        setShowOnboarding(true);
+      }
+      setOnboardingChecked(true);
+    });
+  }, []);
 
   const fetchMeetings = useCallback(async () => {
     try {
@@ -74,6 +88,14 @@ export default function MeetingsScreen() {
     { key: 'upcoming', label: '即将开始' },
     { key: 'completed', label: '已结束' },
   ];
+
+  if (showOnboarding) {
+    return <Onboarding onComplete={() => setShowOnboarding(false)} />;
+  }
+
+  if (!onboardingChecked) {
+    return null;
+  }
 
   return (
     <Screen safeAreaEdges={['left', 'right', 'bottom']}>
@@ -121,14 +143,32 @@ export default function MeetingsScreen() {
         }
       >
         {loading ? (
-          <View style={styles.emptyState}>
-            <FontAwesome6 name="spinner" size={24} color="#94A3B8" />
-            <Text style={styles.emptyText}>加载中...</Text>
+          <View>
+            <MeetingCardSkeleton />
+            <MeetingCardSkeleton />
           </View>
         ) : meetings.length === 0 ? (
           <View style={styles.emptyState}>
-            <FontAwesome6 name="calendar-xmark" size={40} color="#CBD5E1" />
-            <Text style={styles.emptyText}>暂无会议</Text>
+            <View style={styles.emptyIconContainer}>
+              <FontAwesome6 name="calendar-plus" size={36} color="#4F46E5" />
+            </View>
+            <Text style={styles.emptyTitle}>暂无会议安排</Text>
+            <Text style={styles.emptyDescription}>
+              AI 助手可以帮你快速创建会议{'\n'}并自动生成议程和互动组件
+            </Text>
+            <Pressable
+              style={styles.emptyPrimaryBtn}
+              onPress={() => router.push('/assistant')}
+            >
+              <FontAwesome6 name="wand-magic-sparkles" size={14} color="#FFFFFF" />
+              <Text style={styles.emptyPrimaryBtnText}>让 AI 帮我创建</Text>
+            </Pressable>
+            <Pressable
+              style={styles.emptySecondaryBtn}
+              onPress={() => router.push('/assistant')}
+            >
+              <Text style={styles.emptySecondaryBtnText}>手动创建会议</Text>
+            </Pressable>
           </View>
         ) : (
           meetings.map((meeting) => {
@@ -338,10 +378,64 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 60,
-    gap: 12,
+    paddingHorizontal: 32,
   },
-  emptyText: {
+  emptyIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 24,
+    backgroundColor: 'rgba(79,70,229,0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1E293B',
+    marginBottom: 8,
+  },
+  emptyDescription: {
     fontSize: 14,
-    color: '#94A3B8',
+    color: '#64748B',
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 24,
+  },
+  emptyPrimaryBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#4F46E5',
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+    borderRadius: 14,
+    width: '100%',
+    marginBottom: 12,
+    shadowColor: '#4F46E5',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  emptyPrimaryBtnText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  emptySecondaryBtn: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+    borderRadius: 14,
+    width: '100%',
+    backgroundColor: 'rgba(79,70,229,0.08)',
+  },
+  emptySecondaryBtnText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#4F46E5',
   },
 });

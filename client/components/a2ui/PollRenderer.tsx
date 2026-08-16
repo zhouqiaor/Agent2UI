@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, Pressable, StyleSheet, Animated } from 'react-native';
 import { FontAwesome6 } from '@expo/vector-icons';
 import type { PollOption } from '@/utils/a2ui-types';
 
@@ -16,7 +16,23 @@ export function PollRenderer({ data }: PollRendererProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [options, setOptions] = useState(data.options);
   const [totalVotes, setTotalVotes] = useState(data.totalVotes);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [successScale] = useState(() => new Animated.Value(0));
+  const [successOpacity] = useState(() => new Animated.Value(0));
   const hasVoted = selectedId !== null;
+
+  useEffect(() => {
+    if (showSuccess) {
+      Animated.sequence([
+        Animated.parallel([
+          Animated.spring(successScale, { toValue: 1, friction: 5, useNativeDriver: true }),
+          Animated.timing(successOpacity, { toValue: 1, duration: 200, useNativeDriver: true }),
+        ]),
+        Animated.delay(1500),
+        Animated.timing(successOpacity, { toValue: 0, duration: 300, useNativeDriver: true }),
+      ]).start(() => setShowSuccess(false));
+    }
+  }, [showSuccess, successScale, successOpacity]);
 
   const handleVote = (optionId: string) => {
     if (hasVoted) return;
@@ -28,12 +44,15 @@ export function PollRenderer({ data }: PollRendererProps) {
         opt.id === optionId ? { ...opt, votes: opt.votes + 1 } : opt
       )
     );
+    setShowSuccess(true);
   };
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <FontAwesome6 name="chart-bar" size={18} color="#4F46E5" />
+        <View style={styles.iconContainer}>
+          <FontAwesome6 name="chart-bar" size={16} color="#4F46E5" />
+        </View>
         <Text style={styles.question}>{data.question}</Text>
       </View>
 
@@ -56,7 +75,9 @@ export function PollRenderer({ data }: PollRendererProps) {
                   isSelected && styles.radioSelected,
                 ]}
               >
-                {isSelected && <View style={styles.radioInner} />}
+                {isSelected && (
+                  <Animated.View style={[styles.radioInner, { transform: [{ scale: successScale }] }]} />
+                )}
               </View>
               <Text
                 style={[
@@ -79,16 +100,27 @@ export function PollRenderer({ data }: PollRendererProps) {
                     ]}
                   />
                 </View>
-                <Text style={styles.percentageText}>{percentage}%</Text>
+                <Text style={[styles.percentageText, isSelected && styles.percentageTextSelected]}>
+                  {percentage}%
+                </Text>
               </View>
             )}
           </Pressable>
         );
       })}
 
-      <Text style={styles.totalText}>
-        {hasVoted ? `${totalVotes} 人已投票` : `共 ${totalVotes} 人参与`}
-      </Text>
+      <View style={styles.footer}>
+        <Text style={styles.totalText}>
+          {hasVoted ? `${totalVotes} 人已投票` : `共 ${totalVotes} 人参与`}
+        </Text>
+      </View>
+
+      {showSuccess && (
+        <Animated.View style={[styles.successToast, { opacity: successOpacity }]}>
+          <FontAwesome6 name="circle-check" size={14} color="#10B981" />
+          <Text style={styles.successText}>投票成功</Text>
+        </Animated.View>
+      )}
     </View>
   );
 }
@@ -109,6 +141,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 14,
     gap: 10,
+  },
+  iconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: 'rgba(79,70,229,0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   question: {
     fontSize: 15,
@@ -188,10 +228,32 @@ const styles = StyleSheet.create({
     width: 36,
     textAlign: 'right',
   },
+  percentageTextSelected: {
+    color: '#4F46E5',
+  },
+  footer: {
+    marginTop: 4,
+  },
   totalText: {
     fontSize: 12,
     color: '#94A3B8',
     textAlign: 'center',
-    marginTop: 4,
+  },
+  successToast: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(16,185,129,0.15)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  successText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#10B981',
   },
 });

@@ -11,6 +11,7 @@ import { TaskListRenderer } from './TaskListRenderer';
 interface A2UIRendererProps {
   components: A2UIComponent[];
   onAction?: (action: string, data: Record<string, unknown>) => void;
+  isLoading?: boolean;
 }
 
 function HeadingRenderer({ data }: { data: { text: string; level: number } }) {
@@ -99,7 +100,7 @@ function AnimatedComponentWrapper({
   );
 }
 
-export function A2UIRenderer({ components, onAction }: A2UIRendererProps) {
+export function A2UIRenderer({ components, onAction, isLoading }: A2UIRendererProps) {
   const renderComponent = (component: A2UIComponent, index: number) => {
     const content = (() => {
       switch (component.type) {
@@ -209,7 +210,21 @@ export function A2UIRenderer({ components, onAction }: A2UIRendererProps) {
     );
   };
 
-  return <View style={styles.container}>{components.map(renderComponent)}</View>;
+  return (
+    <View style={styles.container}>
+      {components.map(renderComponent)}
+      {isLoading && (
+        <View style={styles.loadingIndicator}>
+          <View style={styles.loadingDots}>
+            <View style={[styles.loadingDot, styles.dot1]} />
+            <View style={[styles.loadingDot, styles.dot2]} />
+            <View style={[styles.loadingDot, styles.dot3]} />
+          </View>
+          <Text style={styles.loadingText}>AI 正在生成内容...</Text>
+        </View>
+      )}
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
@@ -276,5 +291,34 @@ const styles = StyleSheet.create({
   unknownText: {
     fontSize: 12,
     color: '#EF4444',
+  },
+  loadingIndicator: {
+    alignItems: 'center',
+    paddingVertical: 20,
+    gap: 12,
+  },
+  loadingDots: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  loadingDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#4F46E5',
+  },
+  dot1: {
+    opacity: 0.4,
+  },
+  dot2: {
+    opacity: 0.7,
+  },
+  dot3: {
+    opacity: 1,
+  },
+  loadingText: {
+    fontSize: 13,
+    color: '#94A3B8',
+    fontWeight: '500',
   },
 });

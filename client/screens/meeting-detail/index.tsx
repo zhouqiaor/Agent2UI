@@ -113,14 +113,11 @@ export default function MeetingDetailScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        <A2UIRenderer components={components} onAction={handleAction} />
-
-        {streamLoading && components.length === 0 && (
-          <View style={styles.loadingState}>
-            <ActivityIndicator size="large" color="#4F46E5" />
-            <Text style={styles.loadingText}>AI 正在生成会议内容...</Text>
-          </View>
-        )}
+        <A2UIRenderer 
+          components={components} 
+          onAction={handleAction} 
+          isLoading={streamLoading && components.length === 0}
+        />
 
         <View style={{ height: 100 }} />
       </ScrollView>
