@@ -1,8 +1,10 @@
 /**
- * 增强版会议详情页 - 集成 A2IdeaUI 组件
+ * 课程详情页 - 教育场景
  * 
  * 功能：
- * - 使用 A2IdeaUI 组件替换原有 A2UI 组件
+ * - 使用 A2IdeaUI 教育组件
+ * - 支持课堂测验（Quiz）
+ * - 支持知识点标注（KnowledgePoint）
  * - 支持卡片操作（收藏/选中/投屏/关闭）
  * - 支持智能提示快速生成
  * - 支持会话持久化
@@ -18,7 +20,6 @@ import {
   ScrollView,
   Pressable,
   ActivityIndicator,
-  Platform,
   Alert,
   TextInput,
 } from 'react-native';
@@ -26,12 +27,10 @@ import { FontAwesome6 } from '@expo/vector-icons';
 import { Screen } from '@/components/Screen';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
-import { useA2UIStream } from '@/hooks/useA2UIStream';
 import { useResponsive } from '@/hooks/useResponsive';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { Meeting } from '@/utils/a2ui-types';
 
-// A2IdeaUI 组件
+// A2IdeaUI 教育组件
 import {
   Card,
   AgendaRenderer,
@@ -40,9 +39,19 @@ import {
   QARenderer,
   TaskListRenderer,
   SmartTips,
+  QuizRenderer,
+  KnowledgePointRenderer,
 } from '@/components/a2ideaui';
 
-const EXPO_PUBLIC_BACKEND_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_BASE_URL;
+interface Course {
+  id: string;
+  title: string;
+  teacher: string;
+  students: number;
+  duration: string;
+  schedule: string;
+  description: string;
+}
 
 interface A2UIComponent {
   id: string;
@@ -56,17 +65,22 @@ interface A2UIComponent {
   [key: string]: any;
 }
 
-// Interaction-related components shown in the right column on tablet
-const INTERACTION_TYPES = new Set(['poll', 'qa', 'task_list', 'action_button']);
-const INFO_TYPES = new Set(['heading', 'text', 'agenda', 'note', 'divider']);
+// 教育场景智能提示
+const EDUCATION_TIPS = [
+  '📝 生成课堂测验',
+  '📚 标注重点知识点',
+  '📊 创建学习进度跟踪',
+  '❓ 生成课堂问答',
+  '✅ 布置课后作业',
+];
 
-export default function MeetingDetailScreen() {
+export default function CourseDetailScreen() {
   const insets = useSafeAreaInsets();
   const router = useSafeRouter();
   const { id } = useSafeSearchParams<{ id: string }>();
   const { shouldUseTwoColumn, isTablet } = useResponsive();
-  const [meeting, setMeeting] = useState<Meeting | null>(null);
-  const [loadingMeeting, setLoadingMeeting] = useState(true);
+  const [course, setCourse] = useState<Course | null>(null);
+  const [loadingCourse, setLoadingCourse] = useState(true);
   const [cards, setCards] = useState<A2UIComponent[]>([]);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [favoritedCards, setFavoritedCards] = useState<Set<string>>(new Set());
@@ -74,77 +88,135 @@ export default function MeetingDetailScreen() {
   const [inputMessage, setInputMessage] = useState('');
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  const { components, isLoading: streamLoading, startStream } = useA2UIStream();
-
-  // 加载会议数据
+  // 模拟课程数据
   useEffect(() => {
-    const fetchMeeting = async () => {
-      if (!id) return;
-      try {
-        const response = await fetch(
-          `${EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/meetings/${id}`
-        );
-        const json = await response.json();
-        if (json.success) {
-          setMeeting(json.data);
-        }
-      } catch (error) {
-        console.error('Failed to fetch meeting:', error);
-      } finally {
-        setLoadingMeeting(false);
-      }
+    const mockCourse: Course = {
+      id: id || '1',
+      title: 'React Native 高级开发',
+      teacher: '张老师',
+      students: 45,
+      duration: '90分钟',
+      schedule: '每周三 14:00-15:30',
+      description: '深入学习 React Native 的高级特性，包括性能优化、原生模块开发、动画系统等',
     };
-    fetchMeeting();
+    setCourse(mockCourse);
+    setLoadingCourse(false);
+
+    // 模拟课程卡片数据
+    const mockCards: A2UIComponent[] = [
+      {
+        id: 'card-1',
+        type: 'card',
+        title: '课程议程',
+        items: [
+          {
+            type: 'agenda',
+            title: '课程议程',
+            items: [
+              { id: '1', text: 'React Native 架构回顾', completed: true },
+              { id: '2', text: '性能优化技巧', completed: false },
+              { id: '3', text: '原生模块开发', completed: false },
+              { id: '4', text: '动画系统详解', completed: false },
+            ],
+          },
+        ],
+      },
+      {
+        id: 'card-2',
+        type: 'card',
+        title: '课堂测验',
+        items: [
+          {
+            type: 'quiz',
+            title: 'React Native 基础测验',
+            description: '测试你对 React Native 基础知识的掌握程度',
+            questions: [
+              {
+                id: 'q1',
+                question: 'React Native 使用什么作为底层渲染引擎？',
+                options: ['DOM', 'Native Views', 'Canvas', 'WebView'],
+                correctAnswer: 1,
+                type: 'single',
+              },
+              {
+                id: 'q2',
+                question: '以下哪些是 React Native 的核心组件？（多选）',
+                options: ['View', 'Text', 'div', 'span'],
+                correctAnswer: [0, 1],
+                type: 'multiple',
+              },
+            ],
+          },
+        ],
+      },
+      {
+        id: 'card-3',
+        type: 'card',
+        title: '重点知识点',
+        items: [
+          {
+            type: 'knowledge_point',
+            title: 'React Native 性能优化',
+            description: '掌握 React Native 应用性能优化的关键技巧',
+            points: [
+              {
+                id: 'kp1',
+                title: '使用 FlatList 替代 ScrollView',
+                importance: 'high',
+                category: '性能',
+              },
+              {
+                id: 'kp2',
+                title: '避免在渲染函数中创建新对象',
+                importance: 'high',
+                category: '性能',
+              },
+              {
+                id: 'kp3',
+                title: '使用 React.memo 优化组件渲染',
+                importance: 'medium',
+                category: '优化',
+              },
+            ],
+          },
+        ],
+      },
+      {
+        id: 'card-4',
+        type: 'card',
+        title: '课后作业',
+        items: [
+          {
+            type: 'task_list',
+            title: '课后作业',
+            items: [
+              {
+                id: 'task1',
+                text: '完成性能优化练习',
+                completed: false,
+                assignee: '全体学生',
+                dueDate: '2024-01-20',
+              },
+              {
+                id: 'task2',
+                text: '提交原生模块开发作业',
+                completed: false,
+                assignee: '全体学生',
+                dueDate: '2024-01-25',
+              },
+            ],
+          },
+        ],
+      },
+    ];
+    setCards(mockCards);
   }, [id]);
-
-  // 自动加载 A2UI 组件流
-  useEffect(() => {
-    if (id && !streamLoading && components.length === 0) {
-      startStream('/api/v1/a2ui/stream', {
-        meetingId: id,
-        action: 'load',
-      });
-    }
-  }, [id, streamLoading, components.length, startStream]);
-
-  // 将会话数据转换为卡片
-  useEffect(() => {
-    if (components.length > 0) {
-      // 将组件分组为卡片
-      const newCards: A2UIComponent[] = [];
-      let currentCard: A2UIComponent | null = null;
-
-      components.forEach((comp, index) => {
-        if (comp.type === 'heading' || index === 0) {
-          if (currentCard) {
-            newCards.push(currentCard);
-          }
-          currentCard = {
-            id: `card-${index}`,
-            type: 'card',
-            title: comp.title || '会议卡片',
-            content: comp.description || '',
-            items: [],
-          };
-        }
-        if (currentCard && comp.type !== 'heading') {
-          currentCard.items?.push(comp);
-        }
-      });
-
-      if (currentCard) {
-        newCards.push(currentCard);
-      }
-
-      setCards(newCards);
-    }
-  }, [components]);
 
   // 加载收藏状态
   useEffect(() => {
     const loadFavorites = async () => {
       try {
-        const saved = await AsyncStorage.getItem(`meeting-${id}-favorites`);
+        const saved = await AsyncStorage.getItem(`course-${id}-favorites`);
         if (saved) {
           setFavoritedCards(new Set(JSON.parse(saved)));
         }
@@ -159,7 +231,7 @@ export default function MeetingDetailScreen() {
   const saveFavorites = async (favorites: Set<string>) => {
     try {
       await AsyncStorage.setItem(
-        `meeting-${id}-favorites`,
+        `course-${id}-favorites`,
         JSON.stringify(Array.from(favorites))
       );
     } catch (error) {
@@ -206,13 +278,9 @@ export default function MeetingDetailScreen() {
   }, []);
 
   // 智能提示点击
-  const handleSmartTipClick = useCallback(
-    (tip: string) => {
-      setInputMessage(tip);
-      // 可以触发 AI 生成
-    },
-    []
-  );
+  const handleSmartTipClick = useCallback((tip: string) => {
+    setInputMessage(tip);
+  }, []);
 
   // 发送消息
   const handleSendMessage = useCallback(() => {
@@ -238,20 +306,17 @@ export default function MeetingDetailScreen() {
     }
     const info: A2UIComponent[] = [];
     const interaction: A2UIComponent[] = [];
-    cards.forEach((c) => {
-      const hasInteraction = c.items?.some((item: any) =>
-        INTERACTION_TYPES.has(item.type)
-      );
-      if (hasInteraction) {
-        interaction.push(c);
+    cards.forEach((card, index) => {
+      if (index % 2 === 0) {
+        info.push(card);
       } else {
-        info.push(c);
+        interaction.push(card);
       }
     });
     return { infoComponents: info, interactionComponents: interaction };
   }, [cards, shouldUseTwoColumn]);
 
-  if (loadingMeeting) {
+  if (loadingCourse) {
     return (
       <Screen>
         <View style={styles.loadingContainer}>
@@ -275,6 +340,10 @@ export default function MeetingDetailScreen() {
           return <QARenderer key={index} data={item} onAction={() => {}} />;
         case 'task_list':
           return <TaskListRenderer key={index} data={item} onAction={() => {}} />;
+        case 'quiz':
+          return <QuizRenderer key={index} data={item} onAction={() => {}} />;
+        case 'knowledge_point':
+          return <KnowledgePointRenderer key={index} data={item} onAction={() => {}} />;
         default:
           return null;
       }
@@ -290,19 +359,13 @@ export default function MeetingDetailScreen() {
         </Pressable>
         <View style={styles.headerCenter}>
           <Text style={styles.headerTitle} numberOfLines={1}>
-            {meeting?.title || '会议详情'}
+            {course?.title || '课程详情'}
           </Text>
           <Text style={styles.headerSubtitle}>
-            {meeting?.organizer} · {meeting?.participants}人参与 · {meeting?.location}
+            {course?.teacher} · {course?.students}名学生 · {course?.duration}
           </Text>
         </View>
         <View style={styles.headerRight}>
-          {streamLoading && (
-            <View style={styles.streamingIndicator}>
-              <ActivityIndicator size="small" color="#007DFF" />
-              <Text style={styles.streamingText}>AI 生成中</Text>
-            </View>
-          )}
           <Pressable style={styles.headerBtn} onPress={handleExport}>
             <FontAwesome6 name="download" size={18} color="#1E293B" />
           </Pressable>
@@ -312,13 +375,24 @@ export default function MeetingDetailScreen() {
         </View>
       </View>
 
+      {/* 课程信息 */}
+      <View style={styles.courseInfo}>
+        <Text style={styles.courseDescription}>{course?.description}</Text>
+        <View style={styles.courseMeta}>
+          <View style={styles.metaItem}>
+            <FontAwesome6 name="calendar" size={14} color="#64748B" />
+            <Text style={styles.metaText}>{course?.schedule}</Text>
+          </View>
+        </View>
+      </View>
+
       {/* 智能提示 */}
-      <SmartTips onTipClick={handleSmartTipClick} />
+      <SmartTips tips={EDUCATION_TIPS} onTipClick={handleSmartTipClick} />
 
       {/* Tablet landscape: two-column layout */}
       {shouldUseTwoColumn ? (
         <View style={styles.twoColumnContainer}>
-          {/* Left: info / agenda / notes */}
+          {/* Left: info */}
           <ScrollView
             style={styles.leftColumn}
             contentContainerStyle={styles.twoColumnContent}
@@ -327,7 +401,7 @@ export default function MeetingDetailScreen() {
             {infoComponents.map((card) => (
               <Card
                 key={card.id}
-                title={card.title || '会议卡片'}
+                title={card.title || '课程卡片'}
                 isFavorited={favoritedCards.has(card.id)}
                 isSelected={selectedCardId === card.id}
                 isCasting={castingCards.has(card.id)}
@@ -374,7 +448,7 @@ export default function MeetingDetailScreen() {
           {cards.map((card) => (
             <Card
               key={card.id}
-              title={card.title || '会议卡片'}
+              title={card.title || '课程卡片'}
               isFavorited={favoritedCards.has(card.id)}
               isSelected={selectedCardId === card.id}
               isCasting={castingCards.has(card.id)}
@@ -456,19 +530,31 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  streamingIndicator: {
+  courseInfo: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#F9FAFB',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  courseDescription: {
+    fontSize: 14,
+    color: '#475569',
+    lineHeight: 22,
+  },
+  courseMeta: {
+    flexDirection: 'row',
+    marginTop: 8,
+    gap: 16,
+  },
+  metaItem: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    backgroundColor: '#EFF6FF',
-    borderRadius: 16,
   },
-  streamingText: {
-    fontSize: 12,
-    color: '#007DFF',
-    fontWeight: '600',
+  metaText: {
+    fontSize: 13,
+    color: '#64748B',
   },
   twoColumnContainer: {
     flex: 1,
