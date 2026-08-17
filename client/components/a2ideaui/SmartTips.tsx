@@ -16,7 +16,7 @@ interface SmartTip {
 
 interface SmartTipsProps {
   tips?: SmartTip[];
-  onSelect: (tip: SmartTip) => void;
+  onTipClick: (tip: SmartTip) => void;
 }
 
 const defaultTips: SmartTip[] = [
@@ -48,7 +48,7 @@ const defaultTips: SmartTip[] = [
 
 export const SmartTips: React.FC<SmartTipsProps> = ({
   tips = defaultTips,
-  onSelect,
+  onTipClick,
 }) => {
   return (
     <View style={styles.container}>
@@ -66,7 +66,7 @@ export const SmartTips: React.FC<SmartTipsProps> = ({
           <TouchableOpacity
             key={tip.id}
             style={styles.tipButton}
-            onPress={() => onSelect(tip)}
+            onPress={() => onTipClick(tip)}
             activeOpacity={0.7}
           >
             <Ionicons name={tip.icon as any} size={16} color="#007DFF" />
