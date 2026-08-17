@@ -16,6 +16,8 @@ import { useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Onboarding } from '@/components/Onboarding';
 import { MeetingCardSkeleton } from '@/components/Skeleton';
+import SidebarNav from '@/components/SidebarNav';
+import { useResponsive } from '@/hooks/useResponsive';
 import type { Meeting } from '@/utils/a2ui-types';
 
 const EXPO_PUBLIC_BACKEND_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_BASE_URL;
@@ -37,6 +39,7 @@ export default function MeetingsScreen() {
   const [filter, setFilter] = useState<FilterType>('all');
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [onboardingChecked, setOnboardingChecked] = useState(false);
+  const { shouldUseSidebar } = useResponsive();
 
   useEffect(() => {
     AsyncStorage.getItem('@meetflow_onboarding_done').then((value) => {
@@ -171,14 +174,15 @@ export default function MeetingsScreen() {
             </Pressable>
           </View>
         ) : (
-          meetings.map((meeting) => {
-            const status = statusConfig[meeting.status];
-            return (
-              <Pressable
-                key={meeting.id}
-                style={styles.meetingCard}
-                onPress={() => router.push('/meeting-detail', { id: meeting.id })}
-              >
+          <View style={[styles.meetingGrid, shouldUseSidebar && styles.meetingGridTablet]}>
+            {meetings.map((meeting) => {
+              const status = statusConfig[meeting.status];
+              return (
+                <Pressable
+                  key={meeting.id}
+                  style={[styles.meetingCard, shouldUseSidebar && styles.meetingCardTablet]}
+                  onPress={() => router.push('/meeting-detail', { id: meeting.id })}
+                >
                 <Image
                   source={{ uri: meeting.imageUrl }}
                   style={styles.cardImage}
@@ -237,10 +241,12 @@ export default function MeetingsScreen() {
                 </View>
               </Pressable>
             );
-          })
+          })}
+          </View>
         )}
         <View style={{ height: 100 }} />
       </ScrollView>
+      {shouldUseSidebar && <SidebarNav currentTab="meetings" />}
     </Screen>
   );
 }
@@ -300,6 +306,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 8,
   },
+  meetingGrid: {
+    gap: 16,
+  },
+  meetingGridTablet: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 16,
+  },
   meetingCard: {
     backgroundColor: '#F0F0F3',
     borderRadius: 20,
@@ -310,6 +324,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.6,
     shadowRadius: 8,
     elevation: 4,
+  },
+  meetingCardTablet: {
+    width: '48%',
+    marginBottom: 16,
   },
   cardImage: {
     width: '100%',

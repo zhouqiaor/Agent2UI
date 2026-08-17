@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, Pressable, StyleSheet, Animated } from 'react-native';
 import { FontAwesome6 } from '@expo/vector-icons';
 import type { PollOption } from '@/utils/a2ui-types';
+import { useResponsive } from '@/hooks/useResponsive';
 
 interface PollRendererProps {
   data: {
@@ -20,6 +21,7 @@ export function PollRenderer({ data }: PollRendererProps) {
   const [successScale] = useState(() => new Animated.Value(0));
   const [successOpacity] = useState(() => new Animated.Value(0));
   const hasVoted = selectedId !== null;
+  const { shouldUseTwoColumn } = useResponsive();
 
   useEffect(() => {
     if (showSuccess) {
@@ -56,18 +58,23 @@ export function PollRenderer({ data }: PollRendererProps) {
         <Text style={styles.question}>{data.question}</Text>
       </View>
 
-      {options.map((option) => {
-        const percentage =
-          totalVotes > 0 ? Math.round((option.votes / totalVotes) * 100) : 0;
-        const isSelected = selectedId === option.id;
+      <View style={[styles.optionsContainer, shouldUseTwoColumn && styles.optionsContainerTablet]}>
+        {options.map((option) => {
+          const percentage =
+            totalVotes > 0 ? Math.round((option.votes / totalVotes) * 100) : 0;
+          const isSelected = selectedId === option.id;
 
-        return (
-          <Pressable
-            key={option.id}
-            style={[styles.optionRow, isSelected && styles.optionRowSelected]}
-            onPress={() => handleVote(option.id)}
-            disabled={hasVoted}
-          >
+          return (
+            <Pressable
+              key={option.id}
+              style={[
+                styles.optionRow,
+                isSelected && styles.optionRowSelected,
+                shouldUseTwoColumn && styles.optionRowTablet,
+              ]}
+              onPress={() => handleVote(option.id)}
+              disabled={hasVoted}
+            >
             <View style={styles.optionContent}>
               <View
                 style={[
@@ -108,6 +115,7 @@ export function PollRenderer({ data }: PollRendererProps) {
           </Pressable>
         );
       })}
+      </View>
 
       <View style={styles.footer}>
         <Text style={styles.totalText}>
@@ -136,6 +144,14 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 4,
   },
+  optionsContainer: {
+    gap: 10,
+  },
+  optionsContainerTablet: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -163,6 +179,10 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.6)',
+  },
+  optionRowTablet: {
+    width: '48%',
+    marginBottom: 8,
   },
   optionRowSelected: {
     backgroundColor: 'rgba(79,70,229,0.08)',
