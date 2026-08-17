@@ -23,7 +23,7 @@ interface QuizRendererProps {
 
 export const QuizRenderer: React.FC<QuizRendererProps> = ({
   question,
-  options,
+  options = [],
   type = 'single',
   onAnswer,
 }) => {

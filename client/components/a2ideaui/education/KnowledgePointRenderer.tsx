@@ -20,7 +20,7 @@ interface KnowledgePointRendererProps {
 }
 
 export const KnowledgePointRenderer: React.FC<KnowledgePointRendererProps> = ({
-  points,
+  points = [],
 }) => {
   const getImportanceColor = (importance: string) => {
     switch (importance) {
