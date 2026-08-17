@@ -21,7 +21,7 @@ interface TaskListRendererProps {
 }
 
 export const TaskListRenderer: React.FC<TaskListRendererProps> = ({
-  items,
+  items = [],
   onToggle,
 }) => {
   const [completedTasks, setCompletedTasks] = useState<Set<string>>(

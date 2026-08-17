@@ -25,7 +25,7 @@ interface PollRendererProps {
 }
 
 export const PollRenderer: React.FC<PollRendererProps> = ({
-  options,
+  options = [],
   onVote,
 }) => {
   const [selectedOption, setSelectedOption] = useState<string | null>(null);

@@ -25,7 +25,7 @@ interface AgendaRendererProps {
 }
 
 export const AgendaRenderer: React.FC<AgendaRendererProps> = ({
-  items,
+  items = [],
   onToggle,
 }) => {
   const [completedItems, setCompletedItems] = useState<Set<string>>(
