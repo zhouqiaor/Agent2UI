@@ -32,7 +32,7 @@ export const exportToMarkdown = async (data: ExportData): Promise<string> => {
   if (data.messages && data.messages.length > 0) {
     markdown += `## 对话记录\n\n`;
     data.messages.forEach((msg) => {
-      const role = msg.role === 'user' ? '👤 用户' : '🤖 AI';
+      const role = msg.role === 'user' ? '用户 用户' : 'AI AI';
       markdown += `### ${role}\n\n`;
       markdown += `${msg.content}\n\n`;
       markdown += `*${new Date(msg.timestamp).toLocaleString('zh-CN')}*\n\n`;
@@ -53,7 +53,7 @@ export const exportToMarkdown = async (data: ExportData): Promise<string> => {
           if (card.data.items) {
             markdown += `**议程项**：\n\n`;
             card.data.items.forEach((item: any, i: number) => {
-              markdown += `${i + 1}. ${item.title}${item.time ? ` (${item.time})` : ''}${item.completed ? ' ✅' : ''}\n`;
+              markdown += `${i + 1}. ${item.title}${item.time ? ` (${item.time})` : ''}${item.completed ? ' 已' : ''}\n`;
             });
             markdown += `\n`;
           }
