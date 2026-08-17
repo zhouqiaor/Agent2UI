@@ -333,7 +333,7 @@ export default function CourseDetailScreen() {
         case 'agenda':
           return <AgendaRenderer key={index} items={item.items || []} onToggle={() => {}} />;
         case 'poll':
-          return <PollRenderer key={index} options={item.options || []} onSelect={() => {}} />;
+          return <PollRenderer key={index} options={item.options || []} onVote={() => {}} />;
         case 'note':
           return <NoteRenderer key={index} content={item.content || ''} tags={item.tags || []} />;
         case 'qa':
