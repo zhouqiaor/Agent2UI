@@ -331,11 +331,11 @@ export default function CourseDetailScreen() {
     return card.items?.map((item: any, index: number) => {
       switch (item.type) {
         case 'agenda':
-          return <AgendaRenderer key={index} data={item} onAction={() => {}} />;
+          return <AgendaRenderer key={index} items={item.items || []} onToggle={() => {}} />;
         case 'poll':
-          return <PollRenderer key={index} data={item} onAction={() => {}} />;
+          return <PollRenderer key={index} options={item.options || []} onSelect={() => {}} />;
         case 'note':
-          return <NoteRenderer key={index} data={item} onAction={() => {}} />;
+          return <NoteRenderer key={index} content={item.content || ''} tags={item.tags || []} />;
         case 'qa':
           return <QARenderer key={index} data={item} onAction={() => {}} />;
         case 'task_list':

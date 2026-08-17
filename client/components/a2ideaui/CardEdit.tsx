@@ -173,7 +173,7 @@ const AgendaEditor: React.FC<{ data: any; onChange: (data: any) => void }> = ({ 
   };
 
   const removeItem = (index: number) => {
-    const newItems = items.filter((_, i) => i !== index);
+    const newItems = items.filter((_: any, i: number) => i !== index);
     setItems(newItems);
     onChange({ ...data, items: newItems });
   };
@@ -255,7 +255,7 @@ const PollEditor: React.FC<{ data: any; onChange: (data: any) => void }> = ({ da
   };
 
   const removeOption = (index: number) => {
-    const newOptions = options.filter((_, i) => i !== index);
+    const newOptions = options.filter((_: any, i: number) => i !== index);
     setOptions(newOptions);
     onChange({ ...data, options: newOptions });
   };
@@ -366,7 +366,7 @@ const QAEditor: React.FC<{ data: any; onChange: (data: any) => void }> = ({ data
   };
 
   const removeItem = (index: number) => {
-    const newItems = items.filter((_, i) => i !== index);
+    const newItems = items.filter((_: any, i: number) => i !== index);
     setItems(newItems);
     onChange({ ...data, items: newItems });
   };
@@ -451,7 +451,7 @@ const TaskEditor: React.FC<{ data: any; onChange: (data: any) => void }> = ({ da
   };
 
   const removeItem = (index: number) => {
-    const newItems = items.filter((_, i) => i !== index);
+    const newItems = items.filter((_: any, i: number) => i !== index);
     setItems(newItems);
     onChange({ ...data, items: newItems });
   };

@@ -94,13 +94,14 @@ export const FullscreenPresentation: React.FC<FullscreenPresentationProps> = ({
               id={currentCard.id}
               type={currentCard.type}
               title={currentCard.title}
-              data={currentCard.data}
               isCasting={false}
               onFavorite={() => {}}
               onSelect={() => {}}
-              onCasting={() => {}}
+              onCast={() => {}}
               onClose={() => {}}
-            />
+            >
+              <Text>{JSON.stringify(currentCard.data)}</Text>
+            </Card>
           </View>
         </ScrollView>
 
