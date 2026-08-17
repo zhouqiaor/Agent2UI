@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A2IdeaUI · 客户端（手机/平板）鸿蒙 UX</title>
+<style>
+/* =====================================================================
+   A2IdeaUI 客户端原型 —— 控件风格与「鸿蒙工作台」完全复用
+   复用来源：design_prototype/index.html 的设计令牌 + 卡片/内容组件样式
+   本端 = 手机/平板 App：本端用户对话 → 生成 A2UI 结果（1~2 卡片）
+   → 指定卡片「连接投屏」到服务端大屏
+   提供 竖屏(portrait) / 横屏(landscape) 两种布局，点击 ⤢ 切换
+   ===================================================================== */
+
+/* —— 设计令牌（复用：深 / 浅）—— */
+html[data-theme="dark"]{
+  --brand:#3D9BFF; --brand-pressed:#2B82E6; --brand-surface:#123A5C;
+  --success:#4CAF50; --warning:#FFB84D; --danger:#FF6B61;
+  --text-1:#E6E6E6; --text-2:#B0B3B8; --text-3:#8A8D93; --text-inv:#1A1A1A;
+  --surface:#1F1F22; --surface-muted:#2A2A2E; --divider:#3A3A40;
+  --bg:#141416; --bg-soft:#19191C;
+  --shadow-card:none; --shadow-elev:none;
+  --online:var(--success); --online-soft:var(--success-soft);
+  --brand-ring:rgba(61,155,255,.28); --warning-soft:rgba(255,184,77,.14);
+}
+html[data-theme="light"]{
+  --brand:#007DFF; --brand-pressed:#0069D6; --brand-surface:#E8F3FF;
+  --success:#2E7D32; --warning:#F5A623; --danger:#FF3B30;
+  --text-1:#181818; --text-2:#666666; --text-3:#999999; --text-inv:#FFFFFF;
+  --surface:#FFFFFF; --surface-muted:#F5F6F7; --divider:#E8EAED;
+  --bg:#F2F3F5; --bg-soft:#EDEEF0;
+  --shadow-card:none; --shadow-elev:none;
+  --online:var(--success); --online-soft:var(--success-soft);
+  --brand-ring:rgba(0,125,255,.28); --warning-soft:rgba(245,166,35,.14);
+}
+:root{
+  --r-sm:8px; --r-md:12px; --r-lg:16px; --r-full:999px;
+  --font:"HarmonyOS Sans","PingFang SC","Microsoft YaHei",system-ui,-apple-system,sans-serif;
+  --ease:cubic-bezier(0.4,0,0.2,1);
+  --remote:var(--brand); --remote-soft:var(--brand-surface);
+}
+
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;}
+body{
+  font-family:var(--font); color:var(--text-1); background:var(--bg);
+  -webkit-font-smoothing:antialiased; line-height:1.5;
+  display:flex; align-items:center; justify-content:center;
+  transition:background .3s var(--ease),color .3s var(--ease);
+}
+.stage{display:flex;flex-direction:column;align-items:center;gap:14px;}
+.hint{color:var(--text-3);font-size:12px;}
+
+/* —— 设备外壳（手机/平板）：竖屏 390×844，横屏旋转为 844×390 —— */
+.device{
+  width:390px;height:844px;border-radius:44px;overflow:hidden;position:relative;
+  background:var(--bg);box-shadow:0 30px 70px rgba(0,0,0,.55),0 0 0 12px var(--surface-muted),0 0 0 14px var(--divider);
+  display:flex;flex-direction:column;transition:width .35s var(--ease),height .35s var(--ease);
+}
+body.dev-phone .device{width:390px;height:844px;}
+body.dev-phone.landscape .device{width:844px;height:390px;}
+body.dev-tablet .device{width:834px;height:1112px;border-radius:36px;box-shadow:0 30px 70px rgba(0,0,0,.55),0 0 0 12px var(--surface-muted),0 0 0 14px var(--divider);}
+body.dev-tablet.landscape .device{width:1180px;height:834px;}
+.statusbar{height:32px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:0 24px;font-size:14px;font-weight:600;color:var(--text-1);background:var(--surface);border-bottom:1px solid var(--divider);}
+.statusbar .sig{letter-spacing:1px;opacity:.7;}
+body.landscape .statusbar{display:none;}
+
+/* App：竖屏=上下（结果在上、对话在下）；横屏=左右（对话在左、结果在右） */
+.app{flex:1;display:flex;flex-direction:column;min-height:0;}
+body.landscape .app{flex-direction:row-reverse;}
+
+/* AppBar（复用顶栏观感，但置于设备内） */
+.appbar{height:54px;flex-shrink:0;display:flex;align-items:center;gap:10px;padding:0 14px;background:var(--surface);border-bottom:1px solid var(--divider);}
+.brand-mark{width:32px;height:32px;border-radius:var(--r-md);background:var(--brand);color:var(--text-inv);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;flex-shrink:0;}
+.appbar .title{font-size:16px;font-weight:600;}
+.appbar .spacer{flex:1;}
+.conn{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-2);background:var(--surface-muted);border:1px solid var(--divider);border-radius:var(--r-full);padding:5px 11px;cursor:pointer;transition:all .15s var(--ease);white-space:nowrap;}
+.conn .dot{width:8px;height:8px;border-radius:50%;background:var(--text-3);flex-shrink:0;}
+.conn.on{color:var(--brand);border-color:var(--brand);background:var(--brand-surface);}
+.conn.on .dot{background:var(--online);box-shadow:0 0 0 3px var(--online-soft);}
+.rotate{border:none;background:var(--surface-muted);color:var(--text-1);width:34px;height:34px;border-radius:var(--r-sm);cursor:pointer;font-size:17px;flex-shrink:0;transition:transform .25s var(--ease),background .15s;}
+.rotate:hover{background:var(--divider);}
+.rotate:active{transform:rotate(90deg);}
+.devbtn{border:none;background:var(--surface-muted);color:var(--text-1);width:34px;height:34px;border-radius:var(--r-sm);cursor:pointer;font-size:17px;flex-shrink:0;transition:background .15s var(--ease),transform .15s var(--ease);}
+.devbtn:hover{background:var(--divider);}
+.devbtn:active{transform:scale(.9);}
+.devbtn.on{background:var(--brand);color:var(--text-inv);}
+
+/* —— 通用面板（两栏共用） —— */
+.pane{display:flex;flex-direction:column;min-height:0;min-width:0;}
+body.landscape .pane{flex:1;}
+.pane-result{flex:1;background:var(--bg-soft);min-height:0;}
+body.portrait .pane-chat{flex-shrink:0;border-top:1px solid var(--divider);background:var(--surface);}
+body.landscape .pane-chat{border-top:none;border-right:1px solid var(--divider);}
+.pane-head{display:flex;align-items:center;gap:8px;padding:12px 16px;border-bottom:1px solid var(--divider);font-size:14px;font-weight:600;background:var(--surface);flex-shrink:0;}
+.pane-head .cnt{font-size:12px;color:var(--text-3);font-weight:400;}
+.cards{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:14px;}
+/* 平板横屏：结果区双列网格，充分利用宽屏 */
+body.dev-tablet.landscape .cards{display:grid;grid-template-columns:1fr 1fr;align-content:start;}
+
+/* —— 复用的卡片 / 内容组件样式（与工作台一致） —— */
+.sm-card{background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--shadow-card);border:1px solid var(--divider);overflow:hidden;transition:border-color .2s var(--ease),box-shadow .2s var(--ease);}
+.sm-card.active{border-color:var(--brand);box-shadow:0 0 0 2px var(--brand-ring),var(--shadow-elev);}
+.sm-head{display:flex;align-items:center;gap:8px;padding:11px 14px;border-bottom:1px solid var(--divider);cursor:pointer;background:var(--surface);}
+.sm-body{padding:18px;}
+.sm-body .ag-item:last-child,.sm-body .task:last-child{border-bottom:none;}
+.rc-dot{width:8px;height:8px;border-radius:50%;background:var(--brand);flex-shrink:0;}
+.rc-title{font-size:16px;font-weight:600;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.rc-actions{display:flex;gap:4px;flex-shrink:0;}
+.rc-btn{width:32px;height:32px;border-radius:var(--r-sm);border:1px solid var(--divider);background:var(--surface-muted);color:var(--text-2);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:all .15s var(--ease);}
+.rc-btn:hover{color:var(--brand);border-color:var(--brand);}
+.rc-btn:active{transform:scale(.9);}
+.rc-btn.star.on{color:var(--warning);border-color:var(--warning);background:var(--warning-soft);}
+.rc-btn.sel.on{color:var(--brand);border-color:var(--brand);background:var(--brand-surface);}
+.rc-btn.cast{color:var(--brand);border-color:var(--brand);}
+.rc-btn.cast.on{background:var(--brand);color:var(--text-inv);border-color:var(--brand);}
+/* 投屏中：卡片细微品牌描边 + 底部状态条 */
+.sm-card.casting{border-color:var(--brand);box-shadow:0 0 0 1px var(--brand) inset,var(--shadow-card);}
+.cast-bar{display:none;font-size:12px;color:var(--brand);background:var(--brand-surface);padding:6px 14px;align-items:center;gap:6px;font-weight:600;}
+.sm-card.casting .cast-bar{display:flex;}
+.cast-bar::before{content:'●';font-size:10px;}
+
+/* Agenda */
+.ag-item{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--divider);}
+.ag-item:last-child{border-bottom:none;}
+.ag-check{width:22px;height:22px;border-radius:var(--r-sm);border:2px solid var(--divider);flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s var(--ease);}
+.ag-check.on{background:var(--brand);border-color:var(--brand);color:var(--text-inv);font-size:14px;}
+.ag-text{flex:1;font-size:16px;}
+.ag-item.done .ag-text{color:var(--text-3);text-decoration:line-through;}
+.progress{height:6px;border-radius:var(--r-full);background:var(--surface-muted);overflow:hidden;margin-top:12px;}
+.progress>i{display:block;height:100%;background:var(--brand);border-radius:var(--r-full);transition:width .35s var(--ease);}
+
+/* Poll */
+.poll-opt{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:var(--r-md);border:1px solid var(--divider);margin-bottom:10px;cursor:pointer;transition:all .15s var(--ease);position:relative;overflow:hidden;}
+.poll-opt:hover{border-color:var(--brand);}
+.poll-opt .fill{position:absolute;inset:0;background:var(--brand-surface);width:0;transition:width .5s var(--ease);z-index:0;}
+.poll-opt .lbl{position:relative;z-index:1;flex:1;font-size:16px;}
+.poll-opt .pct{position:relative;z-index:1;font-size:14px;font-weight:600;color:var(--brand);}
+.poll-opt.chosen{border-color:var(--brand);}
+.poll-opt.chosen .fill{width:var(--w,60%);}
+
+/* Note */
+.note{border-left:4px solid var(--brand);background:var(--brand-surface);border-radius:0 var(--r-md) var(--r-md) 0;padding:14px 16px;font-size:16px;line-height:1.6;}
+.note-tags{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;}
+.chip{font-size:12px;color:var(--brand);background:var(--brand-surface);padding:4px 12px;border-radius:var(--r-full);}
+
+/* Q&A */
+.qa-list{display:flex;flex-direction:column;gap:10px;margin-bottom:12px;}
+.qa-item{font-size:14px;}
+.qa-q{color:var(--text-1);font-weight:600;}
+.qa-a{color:var(--text-2);margin-top:2px;}
+.qa-input{display:flex;gap:8px;}
+.qa-input input{flex:1;border:1px solid var(--divider);background:var(--surface-muted);border-radius:var(--r-sm);padding:9px 12px;font-size:14px;font-family:var(--font);color:var(--text-1);}
+.qa-input input:focus{outline:none;border-color:var(--brand);}
+.qa-input button{border:none;background:var(--brand);color:var(--text-inv);border-radius:var(--r-sm);padding:0 16px;font-size:14px;cursor:pointer;}
+
+/* —— 对话区（竖屏在底部 / 横屏在左侧）—— */
+.chat{flex:1;overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:10px;}
+body.portrait .pane-chat .chat{max-height:200px;}
+.msg{max-width:84%;font-size:14px;padding:9px 12px;border-radius:var(--r-lg);line-height:1.45;}
+.msg.me{align-self:flex-end;background:var(--brand);color:var(--text-inv);border-bottom-right-radius:4px;}
+.msg.ai{align-self:flex-start;background:var(--surface-muted);color:var(--text-1);border-bottom-left-radius:4px;}
+
+/* 智能提示（复用 chips 横向交互） */
+.smart-tips{padding:10px 14px 4px;border-top:1px solid var(--divider);background:var(--bg-soft);}
+.smart-h{font-size:12px;color:var(--text-3);font-weight:600;margin-bottom:8px;}
+.smart-list{display:flex;flex-flow:row wrap;gap:8px;align-items:center;}
+.smart-tip{font-size:14px;color:var(--text-1);background:var(--brand-surface);border:1px solid var(--brand);border-radius:999px;padding:7px 14px;cursor:pointer;display:inline-flex;align-items:center;white-space:nowrap;transition:transform .15s var(--ease),background .15s,color .15s,box-shadow .15s;}
+.smart-tip:hover{transform:translateY(-1px);background:var(--brand);color:var(--text-inv);box-shadow:var(--shadow-card);}
+.smart-tip:active{transform:scale(.96);}
+
+/* 输入框 */
+.composer{display:flex;gap:8px;padding:10px 14px 14px;}
+.composer input{flex:1;border:1px solid var(--divider);background:var(--surface-muted);border-radius:var(--r-full);padding:11px 16px;font-size:14px;font-family:var(--font);color:var(--text-1);}
+.composer input:focus{outline:none;border-color:var(--brand);}
+.composer .send{border:none;background:var(--brand);color:var(--text-inv);border-radius:var(--r-full);padding:0 20px;font-size:14px;font-weight:600;cursor:pointer;transition:transform .1s,background .15s;}
+.composer .send:active{transform:scale(.95);background:var(--brand-pressed);}
+
+/* Toast（复用） */
+.toast{position:fixed;left:50%;bottom:40px;transform:translateX(-50%) translateY(20px);background:var(--surface);color:var(--text-1);padding:12px 22px;border-radius:var(--r-full);box-shadow:var(--shadow-elev);font-size:14px;opacity:0;pointer-events:none;transition:all .3s var(--ease);z-index:200;border:1px solid var(--divider);}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body class="dev-phone portrait">
+<div class="stage">
+  <div class="device">
+    <div class="statusbar"><span>9:41</span><span class="sig">A2IdeaUI · 5G ▮▮▮▮</span></div>
+    <div class="app">
+      <!-- AppBar -->
+      <div class="appbar">
+        <div class="brand-mark">A</div>
+        <div class="title">A2IdeaUI</div>
+        <div class="spacer"></div>
+        <div class="conn on" id="conn" title="点击断开/连接服务端"><span class="dot"></span><span id="connTxt">会议室大屏</span></div>
+        <button class="devbtn" id="devbtn" title="切换 手机 / 平板">📱</button>
+        <button class="rotate" id="rotate" title="切换竖屏 / 横屏">⤢</button>
+      </div>
+
+      <!-- A2UI 结果（竖屏在上 / 横屏在右） -->
+      <div class="pane pane-result">
+        <div class="pane-head">A2UI 结果 <span class="cnt" id="resultCnt">· 2 张卡片</span></div>
+        <div class="cards" id="cards"></div>
+      </div>
+
+      <!-- 用户对话（竖屏在下 / 横屏在左） -->
+      <div class="pane pane-chat">
+        <div class="chat" id="chat"></div>
+        <div class="smart-tips">
+          <div class="smart-h">💡 智能提示</div>
+          <div class="smart-list" id="smartList"></div>
+        </div>
+        <div class="composer">
+          <input id="msgInput" placeholder="描述要生成的界面…" autocomplete="off">
+          <button class="send" id="sendBtn">发送</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="hint">点 📱/📲 切换 手机 / 平板 · 点 ⤢ 切换 竖屏 / 横屏 · 点卡片 📺 把指定卡片投屏到服务端大屏</div>
+</div>
+
+<script>
+/* ===== 主题（复用） ===== */
+function applyTheme(mode){
+  const html=document.documentElement;
+  if(mode==='follow'){html.setAttribute('data-theme',window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}
+  else html.setAttribute('data-theme',mode);
+}
+applyTheme('light');
+
+/* ===== 内容片段（复用工作台结构） ===== */
+function pollHTML(opts){return `<div class="poll">`+opts.map(o=>`<div class="poll-opt"><span class="fill"></span><span class="lbl">${o[0]}</span><span class="pct">${o[1]}%</span></div>`).join('')+`</div>`;}
+function agHTML(list){const items=list.map(a=>`<div class="ag-item"><div class="ag-check"></div><div class="ag-text">${a[0]}</div></div>`).join('');return `<div class="ag">${items}<div class="progress"><i style="width:${list.filter(a=>a[1]).length/list.length*100}%"></i></div></div>`;}
+function noteHTML(t){return `<div class="note">${t}<div class="note-tags"><span class="chip">#要点</span></div></div>`;}
+
+/* ===== 客户端卡片 ===== */
+const cardsBox=document.getElementById('cards');
+let cSeq=0;const casting=new Set();
+function makeCard(title,bodyHTML){
+  const id='c'+(++cSeq);
+  const sm=document.createElement('div');
+  sm.className='sm-card';sm.dataset.id=id;
+  sm.innerHTML=`<div class="sm-head"><span class="rc-dot"></span><span class="rc-title">${title}</span>`
+    +`<div class="rc-actions"><button class="rc-btn star" title="收藏">☆</button>`
+    +`<button class="rc-btn cast" title="投屏到服务端大屏">📺</button>`
+    +`<button class="rc-btn close" title="关闭">×</button></div></div>`
+    +`<div class="sm-body">${bodyHTML}</div>`
+    +`<div class="cast-bar">投屏中 · 会议室大屏</div>`;
+  // 交互绑定
+  sm.querySelector('.star').onclick=e=>{e.stopPropagation();const b=e.currentTarget;b.classList.toggle('on');b.textContent=b.classList.contains('on')?'★':'☆';toast(b.classList.contains('on')?'已收藏':'已取消收藏');};
+  sm.querySelector('.close').onclick=e=>{e.stopPropagation();casting.delete(id);sm.remove();updateCnt();};
+  sm.querySelector('.cast').onclick=e=>{e.stopPropagation();toggleCast(id,sm);};
+  bindCard(sm);
+  cardsBox.appendChild(sm);updateCnt();
+  return sm;
+}
+function bindCard(root){
+  root.querySelectorAll('.ag-item').forEach(it=>it.onclick=()=>{it.classList.toggle('done');it.querySelector('.ag-check').classList.toggle('on');});
+  root.querySelectorAll('.poll-opt').forEach(op=>op.onclick=()=>{root.querySelectorAll('.poll-opt').forEach(x=>x.classList.remove('chosen'));op.classList.add('chosen');op.style.setProperty('--w',op.querySelector('.pct').textContent);toast('已投票');});
+}
+function toggleCast(id,sm){
+  if(!connOn){toast('未连接服务端，请先在右上角连接');return;}
+  if(casting.has(id)){casting.delete(id);sm.classList.remove('casting');sm.querySelector('.cast').classList.remove('on');toast('已停止投屏');}
+  else{casting.add(id);sm.classList.add('casting');sm.querySelector('.cast').classList.add('on');toast('已投屏到 会议室大屏');}
+}
+function updateCnt(){document.getElementById('resultCnt').textContent='· '+cardsBox.querySelectorAll('.sm-card').length+' 张卡片';}
+
+/* ===== 初始 2 张卡片（演示 1~2 张） ===== */
+makeCard('项目周会 · 议程',agHTML([['周报汇总',true],['联调环境打通',false],['体验走查',false],['下版本排期',false]]));
+makeCard('现场投票 · 方案决策',pollHTML([['方案A 稳健迭代',46],['方案B 一步到位',54]]));
+
+/* ===== 对话 → 生成卡片 ===== */
+const chat=document.getElementById('chat');
+function addMsg(role,text){const m=document.createElement('div');m.className='msg '+role;m.textContent=text;chat.appendChild(m);chat.scrollTop=chat.scrollHeight;}
+function send(){
+  const inp=document.getElementById('msgInput');const v=inp.value.trim();if(!v)return;
+  addMsg('me',v);inp.value='';
+  setTimeout(()=>{addMsg('ai','已为你生成 A2UI 结果卡片。');makeCard('生成的要点',noteHTML('根据「'+v+'」生成的关键要点，可投屏到大屏共享。'));},700);
+}
+document.getElementById('sendBtn').onclick=send;
+document.getElementById('msgInput').addEventListener('keydown',e=>{if(e.key==='Enter')send();});
+
+/* 智能提示（点击生成对应卡片） */
+const SMART=[{l:'发起投票',html:pollHTML([['支持',62],['观望',38]])},{l:'记录要点',html:noteHTML('记录一条会议要点，便于会后同步。')},{l:'生成议程',html:agHTML([['开场',true],['议题一',false],['议题二',false]])}];
+const sl=document.getElementById('smartList');
+SMART.forEach(t=>{const el=document.createElement('div');el.className='smart-tip';el.textContent=t.l;el.onclick=()=>{addMsg('me',t.l);setTimeout(()=>{addMsg('ai','已生成卡片。');makeCard(t.l, t.html);},600);};sl.appendChild(el);});
+
+/* ===== 连接服务端（演示） ===== */
+let connOn=true;
+document.getElementById('conn').onclick=function(){
+  connOn=!connOn;
+  this.classList.toggle('on',connOn);
+  document.getElementById('connTxt').textContent=connOn?'会议室大屏':'未连接';
+  if(!connOn){casting.forEach(id=>{const sm=cardsBox.querySelector('.sm-card[data-id="'+id+'"]');if(sm){sm.classList.remove('casting');sm.querySelector('.cast').classList.remove('on');}});casting.clear();}
+  toast(connOn?'已连接 会议室大屏':'已断开服务端');
+};
+
+/* ===== 竖屏 / 横屏 切换 ===== */
+document.getElementById('rotate').onclick=()=>{
+  const b=document.body;b.classList.toggle('portrait');b.classList.toggle('landscape');
+  toast(b.classList.contains('landscape')?'横屏布局':'竖屏布局');
+};
+
+/* ===== 手机 / 平板 设备切换 ===== */
+document.getElementById('devbtn').onclick=()=>{
+  const b=document.body;
+  const tablet=b.classList.toggle('dev-tablet');
+  b.classList.toggle('dev-phone',!tablet);
+  const btn=document.getElementById('devbtn');
+  btn.classList.toggle('on',tablet);
+  btn.textContent=tablet?'📲':'📱';
+  toast(tablet?'平板视图':'手机视图');
+};
+
+/* Toast */
+let tt;function toast(msg){const t=document.getElementById('toast');if(!t){const d=document.createElement('div');d.id='toast';d.className='toast';document.body.appendChild(d);}const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>el.classList.remove('show'),1800);}
+</script>
+</body>
+</html>

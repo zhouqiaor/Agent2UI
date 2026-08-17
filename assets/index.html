@@ -1,0 +1,1122 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A2IdeaUI · 鸿蒙工作台（左场景 / 中结果 / 右对话）</title>
+<style>
+/* =====================================================================
+   A2IdeaUI 交互原型 —— WorkBuddy 三栏结构 × HarmonyOS 视觉皮肤
+   左：场景会话  中：A2UI 结果展示  右：用户对话
+   设计令牌严格遵循 docs/harmony-design-spec（品牌 #007DFF / 4dp 间距 /
+   圆角 8·12·16 / 多层柔和阴影 / 沉浸光感玻璃拟态 / 标准动效曲线）
+   ===================================================================== */
+
+/* —— 设计令牌（深 / 浅）—— */
+html[data-theme="dark"]{
+  --brand:#3D9BFF; --brand-pressed:#2B82E6; --brand-surface:#123A5C;
+  --success:#4CAF50; --warning:#FFB84D; --danger:#FF6B61;
+  --text-1:#E6E6E6; --text-2:#B0B3B8; --text-3:#8A8D93; --text-inv:#1A1A1A;
+  --surface:#1F1F22; --surface-muted:#2A2A2E; --divider:#3A3A40;
+  --bg:#141416; --bg-soft:#19191C;
+  --shadow-card:none; --shadow-elev:none;
+  --danger-soft:rgba(255,107,97,.16); --warning-soft:rgba(255,184,77,.16); --success-soft:rgba(76,175,80,.16);
+  --brand-ring:rgba(61,155,255,.30); --online:var(--success); --online-soft:var(--success-soft); --remote-line:var(--brand-surface);
+}
+html[data-theme="light"]{
+  --brand:#007DFF; --brand-pressed:#0069D6; --brand-surface:#E8F3FF;
+  --success:#2E7D32; --warning:#F5A623; --danger:#FF3B30;
+  --text-1:#181818; --text-2:#666666; --text-3:#999999; --text-inv:#FFFFFF;
+  --surface:#FFFFFF; --surface-muted:#F5F6F7; --divider:#E8EAED;
+  --bg:#F2F3F5; --bg-soft:#EDEEF0;
+  --shadow-card:none; --shadow-elev:none;
+  --danger-soft:rgba(255,59,48,.14); --warning-soft:rgba(245,166,35,.16); --success-soft:rgba(46,125,50,.14);
+  --brand-ring:rgba(0,125,255,.28); --online:var(--success); --online-soft:var(--success-soft); --remote-line:var(--brand-surface);
+}
+:root{
+  --r-sm:8px; --r-md:12px; --r-lg:16px; --r-full:999px;
+  --font:"HarmonyOS Sans","PingFang SC","Microsoft YaHei",system-ui,-apple-system,sans-serif;
+  --ease:cubic-bezier(0.4,0,0.2,1);
+  --remote:var(--brand); --remote-soft:var(--brand-surface);
+  --scrim:rgba(0,0,0,.5);
+}
+
+*{margin:0;padding: 0;box-sizing:border-box;}
+html,body{height:100%;}
+body{
+  font-family:var(--font); color:var(--text-1); background:var(--bg);
+  -webkit-font-smoothing:antialiased; line-height:1.5; overflow:hidden;
+  transition:background .3s var(--ease),color .3s var(--ease);
+}
+
+/* —— 顶部玻璃导航 —— */
+.topbar{
+  display:flex; align-items:center; gap: 16px; height:60px; padding: 0 20px;
+  background:var(--surface);
+  border-bottom:1px solid var(--divider); position:relative; z-index:10;
+}
+.brand-mark{
+  width:34px;height:34px;border-radius:var(--r-md);background:var(--brand);
+  display:flex;align-items:center;justify-content:center;color:var(--text-inv);
+  font-weight:700;font-size:18px;box-shadow:var(--shadow-card);
+}
+.topbar .title{font-size:18px;font-weight:600;}
+.topbar .title small{font-size:12px;color:var(--text-3);font-weight:400;margin-left: 8px;}
+.topbar .spacer{flex:1;}
+.theme-seg{display:inline-flex;background:var(--surface-muted);border-radius:var(--r-full);padding: 4px;border:1px solid var(--divider);}
+.theme-seg button{
+  border:none;background:transparent;color:var(--text-2);font-family:var(--font);
+  font-size:14px;padding: 8px 16px;border-radius:var(--r-full);cursor:pointer;
+  transition:all .2s var(--ease);
+}
+.theme-seg button.active{background:var(--brand);color:var(--text-inv);font-weight:600;}
+
+/* —— 三栏布局 —— */
+.workbench{display:flex;height:calc(100vh - 60px);}
+.col{display:flex;flex-direction:column;min-height:0;min-width:0;}
+.col-left{width:288px;flex-shrink:0;border-right:1px solid var(--divider);background:var(--bg-soft);transition:width .25s var(--ease);overflow:hidden;}
+.col-left-inner{width:288px;height:100%;display:flex;flex-direction:column;min-height:0;}
+#workbench.left-collapsed .col-left{width:0;min-width:0;border-right:none;}
+.col-mid{flex:1.4;min-width:420px;background:var(--bg-soft);border-right:1px solid var(--divider);position:relative;}
+.col-right{width:420px;flex-shrink:0;min-width:0;background:var(--surface);transition:width .25s var(--ease),opacity .2s var(--ease);overflow:hidden;}
+#workbench.right-collapsed .col-right{width:0;min-width:0;opacity:0;border-right:none;}
+#workbench.right-collapsed .col-mid{border-right:none;}
+
+/* 右栏：边缘折叠手柄（与左栏日程手柄对称，贴在右栏左缘 / 中栏右缘，垂直居中） */
+.right-handle{
+  position:absolute;top:50%;right:-13px;transform:translateY(-50%);width:26px;height:40px;z-index:20;
+  border:1px solid var(--divider);background:var(--surface);border-radius:var(--r-sm);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;
+  box-shadow:var(--shadow-card);color:var(--text-2);
+  transition:right .25s var(--ease),color .15s var(--ease),border-color .15s var(--ease),transform .1s var(--ease);
+}
+.right-handle:hover{color:var(--brand);border-color:var(--brand);}
+.right-handle:active{transform:translateY(-50%) scale(.92);}
+.right-handle .chev{font-size:18px;font-weight:700;line-height:1;transition:transform .25s var(--ease);}
+#workbench.right-collapsed .right-handle{right:8px;}
+#workbench.right-collapsed .right-handle .chev{transform:rotate(180deg);}
+
+/* 顶栏折叠按钮 */
+.top-btn{border:1px solid var(--divider);background:var(--surface);color:var(--text-2);font-family:var(--font);font-size:14px;font-weight:600;padding: 8px 12px;border-radius:var(--r-pill,999px);cursor:pointer;transition:all .15s var(--ease);white-space:nowrap;}
+.top-btn:hover{border-color:var(--brand);color:var(--brand);}
+
+/* 左栏：日程区弹性填充 + 底部主题切换（左下角，IdeaHub 大屏顶部不易操作） */
+.sched-body{flex:1;display:flex;flex-direction:column;min-height:0;}
+.theme-dock{display:flex;align-items:center;gap: 12px;padding:12px 16px;border-top:1px solid var(--divider);background:var(--bg-soft);flex-shrink:0;}
+.theme-dock .lbl{font-size:12px;color:var(--text-3);font-weight:600;flex-shrink:0;}
+/* 左下角底部控制区：角色 / 主题 两行 */
+.bottom-dock{border-top:1px solid var(--divider);background:var(--bg-soft);flex-shrink:0;}
+
+/* —— 左栏：场景列表（垂直场景卡，与日程并列） —— */
+#sceneList{flex:0 0 auto;max-height:300px;}
+.col-head{
+  display:flex;align-items:center;gap: 8px;padding:16px 20px 12px;
+  font-size:14px;font-weight:600;color:var(--text-2);
+}
+.col-head .tag{font-size:12px;color:var(--text-3);font-weight:400;margin-left: auto;}
+.scroll{flex:1;overflow-y:auto;padding: 0 16px 16px;}
+.scroll::-webkit-scrollbar{width:6px;}
+.scroll::-webkit-scrollbar-thumb{background:var(--divider);border-radius:var(--r-full);}
+
+/* —— 左栏：日程 —— */
+
+/* 左栏：边缘折叠手柄（业界交互：栏侧贴边把手，可平滑收起/展开） */
+.col-handle{
+  position:absolute;top:50%;left:-13px;transform:translateY(-50%);width:26px;height:40px;z-index:20;
+  border:1px solid var(--divider);background:var(--surface);border-radius:var(--r-sm);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;
+  box-shadow:var(--shadow-card);color:var(--text-2);
+  transition:left .25s var(--ease),color .15s var(--ease),border-color .15s var(--ease),transform .1s var(--ease);
+}
+.col-handle:hover{color:var(--brand);border-color:var(--brand);}
+.col-handle:active{transform:translateY(-50%) scale(.92);}
+.col-handle .chev{font-size:18px;font-weight:700;line-height:1;transition:transform .25s var(--ease);}
+#workbench.left-collapsed .col-handle{left:8px;}
+#workbench.left-collapsed .col-handle .chev{transform:rotate(180deg);}
+.sched-item{display:flex;gap: 12px;padding:12px 16px;border-bottom:1px solid var(--divider);cursor:pointer;transition:background .15s;}
+.sched-item:hover{background:var(--surface-muted);}
+.sched-item.active{background:var(--brand-surface);}
+.sched-item .tm{font-size:12px;color:var(--brand);font-weight:600;width:46px;flex-shrink:0;font-family:var(--font);}
+.sched-item .meta{flex:1;min-width:0;}
+.sched-item .nm{font-size:14px;font-weight:600;color:var(--text-1);}
+.sched-item .ds{font-size:12px;color:var(--text-3);margin-top: 4px;}
+/* —— 中列：问答组件 —— */
+.qa-list{display:flex;flex-direction:column;gap: 12px;}
+.qa-item{background:var(--surface-muted);border-radius:var(--r-md);padding: 12px 12px;}
+.qa-q{font-size:14px;font-weight:600;color:var(--text-1);}
+.qa-a{font-size:14px;color:var(--text-2);margin-top: 4px;line-height:1.5;}
+.qa-input{display:flex;gap: 8px;margin-top:12px;}
+.qa-input input{flex:1;border:1px solid var(--divider);background:var(--surface);color:var(--text-1);border-radius:var(--r-sm);padding: 8px 12px;font-family:var(--font);font-size:14px;}
+.qa-input input:focus{outline:none;border-color:var(--brand);}
+.qa-input button{border:none;background:var(--brand);color:var(--text-inv);border-radius:var(--r-sm);padding: 0 16px;font-family:var(--font);font-size:14px;font-weight:600;cursor:pointer;}
+.qa-input button:active{background:var(--brand-pressed);}
+
+/* —— 右栏：智能提示（位于常用功能上方） —— */
+.smart-tips{padding:12px 16px 6px;border-top:1px solid var(--divider);background:var(--bg-soft);}
+.smart-h{font-size:12px;color:var(--text-3);font-weight:600;margin-bottom: 8px;display:flex;align-items:center;gap: 8px;}
+.smart-list{display:flex;flex-flow:row wrap;gap: 8px;align-items:center;}
+.smart-tip{font-size:14px;color:var(--text-1);background:var(--brand-surface);border:1px solid var(--brand);border-radius:999px;padding: 8px 16px;cursor:pointer;display:inline-flex;align-items:center;white-space:nowrap;transition:transform .15s var(--ease),background .15s,color .15s,box-shadow .15s;}
+.smart-tip:hover{transform:translateY(-1px);background:var(--brand);color:var(--text-inv);box-shadow:var(--shadow-card);}
+.smart-tip:active{transform:scale(.96);}
+.smart-tip .sm-ico{margin-right:6px;opacity:.8;}
+.smart-tip::after{content:'↗';margin-left: 8px;font-size:12px;opacity:.55;}
+
+/* —— 右栏：常用功能快捷区（与智能提示同款胶囊，区别：固定、中性灰底） —— */
+.quick{padding:12px 16px 6px;border-top:1px solid var(--divider);background:var(--bg-soft);}
+.quick-h{font-size:12px;color:var(--text-3);font-weight:600;margin-bottom: 8px;letter-spacing:.04em;}
+.quick-h .pin{font-weight:400;opacity:.7;margin-left: 4px;}
+.quick-list{display:flex;flex-flow:row wrap;gap: 8px;align-items:center;}
+.quick-item{font-size:14px;color:var(--text-1);background:var(--surface-muted);border:1px solid var(--divider);border-radius:999px;padding: 8px 16px;cursor:pointer;display:inline-flex;align-items:center;white-space:nowrap;transition:transform .15s var(--ease),background .15s,color .15s,box-shadow .15s,border-color .15s;}
+.quick-item:hover{transform:translateY(-1px);background:var(--brand-surface);border-color:var(--brand);box-shadow:var(--shadow-card);}
+.quick-item:active{transform:scale(.96);}
+.quick-item .qi{margin-right:6px;opacity:.85;}
+.tip{margin:10px 16px 4px;padding: 12px 12px;background:var(--brand-surface);border:1px solid var(--brand);border-radius:var(--r-md);font-size:12px;color:var(--text-1);display:flex;gap: 8px;align-items:flex-start;line-height:1.45;}
+.tip .tip-ico{flex-shrink:0;}
+
+/* —— 左栏：场景卡 —— */
+.scene-cat{font-size:12px;color:var(--text-3);padding: 12px 4px 8px;font-weight:600;}
+.scene{
+  display:flex;align-items:center;gap: 12px;padding:12px;border-radius:var(--r-md);
+  background:var(--surface);border:1px solid var(--divider);margin-bottom: 8px;
+  cursor:pointer;transition:transform .15s var(--ease),box-shadow .2s var(--ease),border-color .2s;
+}
+.scene:hover{transform:translateY(-1px);box-shadow:var(--shadow-card);}
+.scene.active{border-color:var(--brand);background:var(--brand-surface);}
+.scene .ico{
+  width:40px;height:40px;border-radius:var(--r-sm);flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:20px;
+  background:var(--surface-muted);
+}
+.scene.active .ico{background:var(--brand);}
+.scene .meta{min-width:0;}
+.scene .nm{font-size:16px;font-weight:600;color:var(--text-1);}
+.scene .ds{font-size:12px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.scene .badge{margin-left:auto;font-size:12px;color:var(--brand);background:var(--brand-surface);padding: 4px 8px;border-radius:var(--r-full);}
+
+/* —— 右栏：对话 —— */
+.chat{flex:1;overflow-y:auto;padding: 16px 20px;display:flex;flex-direction:column;gap: 16px;}
+.msg{display:flex;gap: 12px;max-width:82%;animation:rise .25s var(--ease);}
+@keyframes rise{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+.msg.ai{align-self:flex-start;}
+.msg.me{align-self:flex-end;flex-direction:row-reverse;}
+.avatar{width:34px;height:34px;border-radius:var(--r-full);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:16px;}
+.msg.ai .avatar{background:var(--brand-surface);color:var(--brand);}
+.msg.me .avatar{background:var(--brand);color:var(--text-inv);}
+.bubble{padding:12px 16px;border-radius:var(--r-md);font-size:16px;line-height:1.5;}
+.msg.ai .bubble{background:var(--surface);border:1px solid var(--divider);border-top-left-radius:4px;}
+.msg.me .bubble{background:var(--brand);color:var(--text-inv);border-top-right-radius:4px;}
+.typing{display:inline-flex;gap: 4px;padding:4px 2px;}
+.typing span{width:7px;height:7px;border-radius:50%;background:var(--text-3);animation:blink 1.2s infinite;}
+.typing span:nth-child(2){animation-delay:.2s;} .typing span:nth-child(3){animation-delay:.4s;}
+@keyframes blink{0%,60%,100%{opacity:.3;transform:translateY(0);}30%{opacity:1;transform:translateY(-3px);}}
+.composer{display:flex;gap: 12px;padding:14px 16px;border-top:1px solid var(--divider);background:var(--surface);}
+.composer input{
+  flex:1;padding: 12px 16px;border-radius:var(--r-sm);border:1px solid var(--divider);
+  background:var(--surface-muted);color:var(--text-1);font-family:var(--font);font-size:16px;outline:none;
+}
+.composer input:focus{border-color:var(--brand);}
+.send{
+  border:none;background:var(--brand);color:var(--text-inv);font-family:var(--font);font-weight:600;
+  padding: 0 24px;border-radius:var(--r-full);cursor:pointer;font-size:16px;
+  transition:transform .1s var(--ease),background .15s;
+}
+.send:active{transform:scale(.95);background:var(--brand-pressed);}
+
+/* 对话区：A2UI 结果预览卡（可点击 / 可拖入中间结果区） */
+.pv-hint{font-size:12px;color:var(--text-3);margin-bottom: 8px;}
+.pv-card{border:1px dashed var(--brand);border-radius:var(--r-md);background:var(--brand-surface);padding: 12px;cursor:grab;transition:box-shadow .15s var(--ease),opacity .2s var(--ease),border-color .15s;}
+.pv-card:hover{box-shadow:var(--shadow-card);}
+.pv-card:active{cursor:grabbing;}
+.pv-card.dragging{opacity:.5;}
+.pv-card.placed{border-style:solid;border-color:var(--divider);background:var(--surface);cursor:default;opacity:.85;padding: 0;overflow:hidden;}
+.pv-card.placed .a2ui-card{border:none;box-shadow:none;margin: 0;}
+.pv-card .a2ui-card{margin-bottom:12px;}
+.pv-card .a2ui-card:last-child{margin-bottom:0;}
+.pv-actions{margin-top:10px;display:flex;}
+.pv-btn{border:none;background:var(--brand);color:var(--text-inv);font-family:var(--font);font-weight:600;font-size:14px;padding: 8px 16px;border-radius:var(--r-sm);cursor:pointer;transition:background .15s var(--ease);}
+.pv-btn:hover{background:var(--brand-pressed);}
+.pv-done{font-size:14px;color:var(--success);font-weight:600;}
+
+/* —— 中栏：A2UI 结果 —— */
+.tool-btn{
+  width:36px;height:36px;border-radius:var(--r-sm);border:1px solid var(--divider);
+  background:var(--surface-muted);color:var(--text-2);cursor:pointer;font-size:16px;
+  display:flex;align-items:center;justify-content:center;transition:all .15s var(--ease);
+}
+.tool-btn:hover{color:var(--brand);border-color:var(--brand);}
+.tool-btn:active{transform:scale(.92);}
+.canvas{flex:1;overflow-y:auto;padding: 20px;transition:box-shadow .15s var(--ease),background .15s var(--ease);}
+.canvas.drop-hot{box-shadow:inset 0 0 0 2px var(--brand);background:var(--brand-surface);}
+.a2ui-card{
+  background:var(--surface);border-radius:var(--r-lg);padding: 20px;margin-bottom:16px;
+  box-shadow:var(--shadow-card);border:1px solid var(--divider);
+}
+.a2ui-title{display:flex;align-items:center;gap: 8px;font-size:16px;font-weight:600;margin-bottom: 16px;}
+.a2ui-title .dot{width:8px;height:8px;border-radius:50%;background:var(--brand);}
+
+/* 结果卡片：均为顶层卡片，不再分类 / 嵌套（关闭 / 选中修改 / 收藏） */
+.rc-dot{width:8px;height:8px;border-radius:50%;background:var(--brand);flex-shrink:0;}
+.rc-title{font-size:16px;font-weight:600;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.rc-actions{display:flex;gap: 4px;flex-shrink:0;}
+.rc-btn{width:30px;height:30px;border-radius:var(--r-sm);border:1px solid var(--divider);background:var(--surface-muted);color:var(--text-2);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:all .15s var(--ease);}
+.rc-btn:hover{color:var(--brand);border-color:var(--brand);}
+.rc-btn:active{transform:scale(.9);}
+.rc-btn.star.on{color:var(--warning);border-color:var(--warning);background:var(--warning-soft);}
+.rc-btn.sel.on{color:var(--brand);border-color:var(--brand);background:var(--brand-surface);}
+.rc-foot{border-top:1px dashed var(--divider);padding: 8px 16px;font-size:12px;color:var(--text-3);display:none;flex-direction:column;gap: 4px;}
+.rc-foot.show{display:flex;}
+.rc-foot .rec::before{content:'· ';color:var(--brand);}
+
+/* 小卡片：议程 / 实时互动 / 关键要点 / 问答（各自可 关闭 / 选中修改 / 收藏） */
+.sm-card{background:var(--surface);border-radius:var(--r-lg);margin-bottom: 16px;box-shadow:var(--shadow-card);border:1px solid var(--divider);overflow:hidden;transition:border-color .2s var(--ease),box-shadow .2s var(--ease);}
+.sm-card.active{border-color:var(--brand);box-shadow:0 0 0 2px var(--brand-ring),var(--shadow-elev);}
+.sm-head{display:flex;align-items:center;gap: 8px;padding:11px 14px;border-bottom:1px solid var(--divider);cursor:pointer;background:var(--surface);}
+.sm-body{padding:20px;}
+.sm-body .ag-item:last-child,.sm-body .task:last-child{border-bottom:none;}
+.task-list{display:flex;flex-direction:column;gap: 8px;}
+.task-list .task{margin-bottom:0;}
+
+/* —— 已连接客户端条（大屏服务端） —— */
+.clients-bar{display:flex;align-items:center;gap: 12px;padding:8px 16px;border-bottom:1px solid var(--divider);background:var(--bg-soft);}
+.cb-h{font-size:12px;color:var(--text-3);font-weight:600;white-space:nowrap;}
+.clients{display:flex;gap: 8px;flex-wrap:wrap;}
+.client-chip{display:inline-flex;align-items:center;gap: 8px;font-size:12px;color:var(--text-1);background:var(--surface);border:1px solid var(--divider);border-radius:var(--r-full);padding: 4px 12px;white-space:nowrap;}
+.client-chip .dot{width:7px;height:7px;border-radius:50%;background:var(--online);box-shadow:0 0 0 3px var(--online-soft);flex-shrink:0;}
+.client-chip .dev{opacity:.55;font-size:12px;}
+.sim{margin-left:auto;border:1px dashed var(--brand);background:transparent;color:var(--brand);border-radius:var(--r-sm);padding: 8px 12px;font-size:12px;cursor:pointer;transition:all .15s var(--ease);white-space:nowrap;}
+.sim:hover{background:var(--brand-surface);}
+.sim:active{transform:scale(.96);}
+
+/* —— 客户端投屏卡片：细微区分色 + 30s 倒计时 + 固定 —— */
+.sm-card.remote{border-color:var(--remote);box-shadow:0 0 0 1px var(--remote) inset,var(--shadow-card);}
+.sm-card.remote .from{font-size:12px;color:var(--remote);display:flex;align-items:center;gap: 4px;padding:7px 14px 0;font-weight:600;}
+.sm-card.remote .from::before{content:'📱';}
+.sm-card.remote .cd-wrap{height:3px;background:var(--surface-muted);position:relative;margin-top: 12px;}
+.sm-card.remote .cd-bar{position:absolute;left:0;top:0;bottom:0;width:100%;background:var(--remote);transition:width .2s linear;}
+.sm-card.remote .rc-btn.pin{color:var(--remote);border-color:var(--remote);}
+.sm-card.remote .rc-btn.pin.on{background:var(--remote);color:var(--text-inv);border-color:var(--remote);}
+/* 固定后移除 .remote 即与本端小卡片样式完全一致，无需额外规则 */
+/* 右栏：修改目标条 */
+.edit-bar{padding:8px 16px;font-size:12px;color:var(--text-2);background:var(--brand-surface);border-top:1px solid var(--divider);display:none;}
+.edit-bar.show{display:block;}
+.edit-bar b{color:var(--brand);}
+
+/* Agenda */
+.ag-item{display:flex;align-items:center;gap: 12px;padding:10px 0;border-bottom:1px solid var(--divider);}
+.ag-item:last-child{border-bottom:none;}
+.ag-check{width:22px;height:22px;border-radius:var(--r-sm);border:2px solid var(--divider);flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s var(--ease);}
+.ag-check.on{background:var(--brand);border-color:var(--brand);color:var(--text-inv);font-size:14px;}
+.ag-text{flex:1;font-size:16px;}
+.ag-item.done .ag-text{color:var(--text-3);text-decoration:line-through;}
+.progress{height:6px;border-radius:var(--r-full);background:var(--surface-muted);overflow:hidden;margin-top: 12px;}
+.progress>i{display:block;height:100%;background:var(--brand);border-radius:var(--r-full);transition:width .35s var(--ease);}
+
+/* Poll */
+.poll-opt{display:flex;align-items:center;gap: 12px;padding:12px 14px;border-radius:var(--r-md);border:1px solid var(--divider);margin-bottom: 12px;cursor:pointer;transition:all .15s var(--ease);position:relative;overflow:hidden;}
+.poll-opt:hover{border-color:var(--brand);}
+.poll-opt .fill{position:absolute;inset: 0;background:var(--brand-surface);width:0;transition:width .5s var(--ease);z-index:0;}
+.poll-opt .lbl{position:relative;z-index:1;flex:1;font-size:16px;}
+.poll-opt .pct{position:relative;z-index:1;font-size:14px;font-weight:600;color:var(--brand);}
+.poll-opt.chosen{border-color:var(--brand);}
+.poll-opt.chosen .fill{width:var(--w,60%);}
+
+/* Note */
+.note{border-left:4px solid var(--brand);background:var(--brand-surface);border-radius:0 var(--r-md) var(--r-md) 0;padding: 16px 16px;font-size:16px;line-height:1.6;}
+.note-tags{display:flex;gap: 8px;margin-top:12px;flex-wrap:wrap;}
+.chip{font-size:12px;color:var(--brand);background:var(--brand-surface);padding: 4px 12px;border-radius:var(--r-full);}
+
+/* TaskList */
+.task{display:flex;align-items:center;gap: 12px;padding:12px 14px;border-radius:var(--r-md);background:var(--surface-muted);margin-bottom: 8px;}
+.task .pri{font-size:12px;font-weight:700;padding: 4px 8px;border-radius:var(--r-full);}
+.pri.high{background:var(--danger-soft);color:var(--danger);}
+.pri.mid{background:var(--warning-soft);color:var(--warning);}
+.pri.low{background:var(--success-soft);color:var(--success);}
+.task .t-txt{flex:1;font-size:16px;}
+.task .t-who{font-size:12px;color:var(--text-3);}
+
+/* ActionButton */
+.act-btn{width:100%;border:none;background:var(--brand);color:var(--text-inv);font-family:var(--font);font-weight:600;font-size:16px;padding: 12px;border-radius:var(--r-md);cursor:pointer;transition:transform .1s var(--ease),background .15s;margin-top: 4px;}
+.act-btn:active{transform:scale(.97);background:var(--brand-pressed);}
+
+/* 全屏演示遮罩 */
+.fullscreen{position:fixed;inset: 0;background:var(--bg);z-index:100;display:none;flex-direction:column;}
+.fullscreen.open{display:flex;}
+.fs-bar{height:56px;display:flex;align-items:center;gap: 12px;padding:0 20px;background:var(--surface);border-bottom:1px solid var(--divider);}
+.fs-bar .x{border:none;background:var(--surface-muted);color:var(--text-1);width:34px;height:34px;border-radius:var(--r-sm);cursor:pointer;font-size:18px;}
+.fs-body{flex:1;overflow-y:auto;padding: 32px;display:flex;justify-content:center;}
+.fs-inner{width:min(520px,100%);}
+.toast{position:fixed;left:50%;bottom:40px;transform:translateX(-50%) translateY(20px);background:var(--surface);color:var(--text-1);padding: 12px 24px;border-radius:var(--r-full);box-shadow:var(--shadow-elev);font-size:14px;opacity:0;pointer-events:none;transition:all .3s var(--ease);z-index:200;border:1px solid var(--divider);}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* 卡片：客户端操作按钮（右上角，提示可扫码/推送） */
+.rc-btn.cast{color:var(--remote);border-color:var(--remote-line);}
+.rc-btn.cast.on{background:var(--remote);color:var(--text-inv);border-color:var(--remote);}
+
+/* 客户端操作弹窗（扫码参与 抢答/投屏 + 推送到已连接客户端） */
+.op-modal{position:fixed;inset: 0;background:var(--scrim);z-index:150;display:none;align-items:center;justify-content:center;}
+.op-modal.open{display:flex;animation:rise .2s var(--ease);}
+.op-card{width:min(380px,92vw);background:var(--surface);border:1px solid var(--divider);border-radius:var(--r-lg);box-shadow:var(--shadow-elev);overflow:hidden;}
+.op-head{display:flex;align-items:center;gap: 12px;padding:16px 18px;border-bottom:1px solid var(--divider);background:var(--bg-soft);}
+.op-ico{width:34px;height:34px;border-radius:var(--r-sm);background:var(--remote-soft);color:var(--remote);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.op-t{flex:1;min-width:0;}
+.op-title{font-size:16px;font-weight:600;}
+.op-sub{font-size:12px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.op-x{border:none;background:var(--surface-muted);color:var(--text-1);width:30px;height:30px;border-radius:var(--r-sm);cursor:pointer;font-size:16px;flex-shrink:0;transition:background .15s;}
+.op-x:hover{background:var(--divider);}
+.op-body{padding:18px;display:flex;flex-direction:column;gap: 20px;}
+.op-qr-wrap{display:flex;flex-direction:column;align-items:center;gap: 12px;}
+.op-qr{width:150px;height:150px;border-radius:var(--r-sm);border:1px solid var(--divider);background:#fff;padding: 8px;}
+.op-qr-cap{font-size:14px;color:var(--text-2);font-weight:600;text-align:center;}
+.op-modes{display:flex;gap: 12px;}
+.op-mode{flex:1;border:1px solid var(--divider);background:var(--surface-muted);color:var(--text-1);font-family:var(--font);font-size:14px;font-weight:600;padding: 12px;border-radius:var(--r-md);cursor:pointer;transition:all .15s var(--ease);}
+.op-mode:hover{border-color:var(--remote);}
+.op-mode.on{background:var(--remote);color:var(--text-inv);border-color:var(--remote);}
+.op-push-h{font-size:14px;color:var(--text-3);font-weight:600;margin-bottom: 12px;}
+.op-clients{display:flex;flex-direction:column;gap: 8px;margin-bottom:12px;}
+.op-client{display:flex;align-items:center;gap: 8px;font-size:14px;padding: 12px 12px;border:1px solid var(--divider);border-radius:var(--r-md);}
+.op-client .dot{width:7px;height:7px;border-radius:50%;background:var(--online);box-shadow:0 0 0 3px var(--online-soft);flex-shrink:0;}
+.op-client .nm{flex:1;font-weight:600;}
+.op-client .dev{font-size:12px;color:var(--text-3);}
+.op-client .op-push-one{border:1px solid var(--remote);background:transparent;color:var(--remote);font-family:var(--font);font-size:12px;font-weight:600;padding: 8px 12px;border-radius:var(--r-sm);cursor:pointer;transition:all .15s var(--ease);white-space:nowrap;}
+.op-client .op-push-one:hover{background:var(--remote);color:var(--text-inv);}
+.op-client .op-push-one.done{background:var(--remote);color:var(--text-inv);cursor:default;}
+.op-push-all{width:100%;border:none;background:var(--brand);color:var(--text-inv);font-family:var(--font);font-weight:600;font-size:14px;padding: 12px;border-radius:var(--r-md);cursor:pointer;transition:transform .1s var(--ease),background .15s;}
+.op-push-all:active{transform:scale(.98);background:var(--brand-pressed);}
+</style>
+</head>
+<body>
+
+<!-- 顶栏 -->
+<div class="topbar">
+  <div class="brand-mark">A</div>
+  <div class="title">A2IdeaUI<small>鸿蒙工作台 · 左内容/日程 / 中结果 / 右对话</small></div>
+  <div class="spacer"></div>
+</div>
+
+<!-- 三栏 -->
+<div class="workbench" id="workbench">
+
+  <!-- 左：身份切换 + 日程（整栏可平滑折叠） -->
+  <div class="col col-left" id="colLeft">
+   <div class="col-left-inner">
+    <div class="col-head" id="schedHead">工作台</div>
+    <div class="sched-body" id="schedBody">
+      <div class="tip"><span class="tip-ico">💡</span><span>左栏选「日程」或「场景」，中间即生成对应 A2UI 结果；右侧对话可继续修改。</span></div>
+      <!-- 日程 -->
+      <div class="scene-cat">日程</div>
+      <div class="scroll" id="scheduleList"></div>
+      <!-- 场景：含首页默认场景 -->
+      <div class="scene-cat">场景</div>
+      <div class="scroll" id="sceneList"></div>
+    </div>
+    <!-- 左下角底部控制区：主题切换（IdeaHub 大屏顶部不易操作） -->
+    <div class="bottom-dock">
+      <!-- 主题切换 -->
+      <div class="theme-dock">
+        <span class="lbl">主题</span>
+        <div class="theme-seg" id="themeSeg">
+          <button data-mode="dark" class="active">深色</button>
+          <button data-mode="light">浅色</button>
+          <button data-mode="follow">跟随</button>
+        </div>
+      </div>
+    </div>
+   </div>
+  </div>
+
+  <!-- 中：A2UI 结果 -->
+  <div class="col col-mid">
+    <!-- 边缘折叠手柄：贴中栏左缘，点击平滑收起/展开整条左侧栏（业界交互，参照 VS Code / Notion） -->
+    <button class="col-handle" id="colHandle" title="折叠/展开左侧栏"><span class="chev">‹</span></button>
+    <!-- 边缘折叠手柄：贴右栏左缘，点击平滑收起/展开对话区（与左侧日程手柄对称，业界交互） -->
+    <button class="right-handle" id="rightHandle" title="折叠/展开对话区"><span class="chev">›</span></button>
+    <!-- 已连接客户端（本端为大屏服务端：自己生成显示，也接收客户端 APP 投屏） -->
+    <div class="clients-bar" id="clientsBar">
+      <span class="cb-h">📡 已连接客户端</span>
+      <div class="clients" id="clients"></div>
+      <button class="sim" id="simCast" title="模拟一台已连接客户端投屏">＋ 模拟客户端投屏</button>
+      <button class="tool-btn" id="fsBtn" title="全屏演示">⛶</button>
+    </div>
+    <div class="canvas" id="canvas"></div>
+  </div>
+
+  <!-- 右：用户对话 -->
+  <div class="col col-right">
+    <div class="col-head">用户对话 <span class="tag">与 A2UI 助手</span></div>
+    <div class="chat" id="chat"></div>
+    <div class="edit-bar" id="editBar"></div>
+    <div class="smart-tips">
+      <div class="smart-h">💡 智能提示 <span style="font-weight:400;opacity:.7;margin-left:2px;">· 对话推荐</span></div>
+      <div class="smart-list" id="smartList"></div>
+    </div>
+    <div class="quick">
+      <div class="quick-h">常用功能 <span class="pin">· 固定</span></div>
+      <div class="quick-list" id="quickGrid"></div>
+    </div>
+    <div class="composer">
+      <input id="msgInput" placeholder="描述你要生成的会议界面…" autocomplete="off">
+      <button class="send" id="sendBtn">发送</button>
+    </div>
+  </div>
+</div>
+
+<!-- 全屏演示 -->
+<div class="fullscreen" id="fullscreen">
+  <div class="fs-bar">
+    <button class="x" id="fsClose">✕</button>
+    <div class="title" style="font-size:16px;font-weight:600;" id="fsTitle">A2UI 全屏演示</div>
+  </div>
+  <div class="fs-body"><div class="fs-inner" id="fsInner"></div></div>
+</div>
+
+<!-- 卡片：客户端操作弹窗（扫码抢答/投屏 + 推送到已连接客户端） -->
+<div class="op-modal" id="opModal">
+  <div class="op-card">
+    <div class="op-head">
+      <span class="op-ico">📱</span>
+      <div class="op-t">
+        <div class="op-title">客户端操作</div>
+        <div class="op-sub" id="opSub">卡片</div>
+      </div>
+      <button class="op-x" id="opClose">✕</button>
+    </div>
+    <div class="op-body">
+      <div class="op-qr-wrap">
+        <canvas class="op-qr" id="opQR" width="150" height="150"></canvas>
+        <div class="op-qr-cap" id="opQrCap">扫码参与</div>
+      </div>
+      <div class="op-modes">
+        <button class="op-mode" data-mode="rush">⚡ 抢答</button>
+        <button class="op-mode" data-mode="cast">🖥 投屏</button>
+      </div>
+      <div class="op-push">
+        <div class="op-push-h">推送到已连接客户端</div>
+        <div class="op-clients" id="opClients"></div>
+        <button class="op-push-all" id="opPushAll">📤 全部推送</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ===== 主题：深/浅/跟随 ===== */
+const mq=window.matchMedia('(prefers-color-scheme: dark)');
+function applyTheme(mode){
+  const seg=document.getElementById('themeSeg');
+  seg.querySelectorAll('button').forEach(b=>b.classList.toggle('active',b.dataset.mode===mode));
+  if(mode==='follow'){document.documentElement.dataset.theme=mq.matches?'dark':'light';}
+  else document.documentElement.dataset.theme=mode;
+}
+document.getElementById('themeSeg').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(b) applyTheme(b.dataset.mode);
+});
+mq.addEventListener?.('change',()=>{if(document.querySelector('#themeSeg button.active').dataset.mode==='follow')applyTheme('follow');});
+
+/* ===== 场景数据 ===== */
+const SCENES=[
+  {id:'home',role:'',cat:'首页',nm:'首页',ds:'鸿蒙工作台概览',ico:'🏠',badge:'Home'},
+  /* 会议 */
+  {id:'weekly',role:'meeting',cat:'例会',nm:'项目周会',ds:'同步进展 · 排期下一周',ico:'📅',badge:'Agenda'},
+  {id:'review',role:'meeting',cat:'评审',nm:'需求评审',ds:'投票决策 · 记录结论',ico:'🧐',badge:'Poll'},
+  {id:'train',role:'meeting',cat:'宣讲',nm:'培训宣讲',ds:'议程 + 现场投票',ico:'🎓',badge:'Agenda'},
+  {id:'launch',role:'meeting',cat:'发布',nm:'产品发布会',ds:'金句记录 · 任务分派',ico:'🚀',badge:'Note'},
+  {id:'oneone',role:'meeting',cat:'沟通',nm:'一对一沟通',ds:'要点沉淀',ico:'💬',badge:'Note'},
+  {id:'retro',role:'meeting',cat:'复盘',nm:'迭代复盘',ds:'问题跟踪 · 责任分派',ico:'🔁',badge:'Task'},
+  /* 教育 */
+  {id:'edu-math',role:'education',cat:'课程',nm:'数学·函数',ds:'课堂互动',ico:'➗',badge:'Agenda'},
+  {id:'edu-eng',role:'education',cat:'课程',nm:'英语写作课',ds:'写作练习',ico:'🔤',badge:'Agenda'},
+];
+
+const A2UI={
+  weekly:()=>cardWrap('会议议程',agHTML([['周报汇总',1],['联调环境打通',0],['体验走查',0],['下版本排期',0]])),
+  review:()=>cardWrap('方案投票',pollHTML([['方案A：稳健迭代',42],['方案B：一步到位',58]])),
+  train:()=>cardWrap('培训议程',agHTML([['开场',1],['知识点讲解',0],['现场互动',0]]))+cardWrap('现场互动',pollHTML([['很清晰',80],['再慢一点',20]])),
+  launch:()=>cardWrap('关键金句',`<div class="note">「让每一次会议，都自动留下可执行的产物。」<div class="note-tags"><span class="chip">#发布主题</span><span class="chip">#slogan</span></div></div>`)+cardWrap('跟进项',taskHTML([['高','修复登录态丢失','@张工'],['中','补充埋点','@李工'],['低','优化空状态','@王工']])),
+  oneone:()=>cardWrap('沟通要点',`<div class="note">本周对齐：聚焦核心链路，减少并行任务。<div class="note-tags"><span class="chip">#对齐</span><span class="chip">#本周</span></div></div>`),
+  retro:()=>cardWrap('问题跟踪',taskHTML([['高','回归用例缺失','@张工'],['中','性能劣化','@李工'],['低','文档待补','@王工']])),
+  home:()=>`<div class="a2ui-card"><div class="a2ui-title"><span class="dot"></span>欢迎使用 A2IdeaUI</div>
+    <div class="note">这是鸿蒙风格的大屏工作台：左栏选「场景」或「日程」，中间自动生成 A2UI 结果（议程 / 实时互动 / 关键要点 / 问答 等顶层卡片），右侧对话可继续修改、收藏。
+    <div class="note-tags"><span class="chip">#首页</span><span class="chip">#工作台</span></div></div></div>
+    `+cardWrap('快速开始',`<div class="note">
+    ① 在左栏「场景」选一个模板（或停留在「首页」概览）<br>
+    ② 中间自动生成对应卡片，可分别关闭 / 选中 / 收藏<br>
+    ③ 选中卡片后，在右侧对话中继续修改，或让客户端 APP 投屏协作
+    <div class="note-tags"><span class="chip">#引导</span></div></div>`),
+  'edu-math':()=>a2uiFromObj(SCHEDULE_BY_ROLE.education[0].a2ui),
+  'edu-eng':()=>a2uiFromObj(SCHEDULE_BY_ROLE.education[1].a2ui),
+};
+function cardWrap(t,b){return `<div class="a2ui-card"><div class="a2ui-title"><span class="dot"></span>${t}</div>${b}</div>`;}
+function agHTML(items){const total=items.length,done=items.filter(i=>i[1]).length;const rows=items.map(it=>`<div class="ag-item ${it[1]?'done':''}"><div class="ag-check ${it[1]?'on':''}">✓</div><div class="ag-text">${it[0]}</div></div>`).join('');return `<div class="ag">${rows}</div><div class="progress"><i style="width:${total?Math.round(done/total*100):0}%"></i></div>`;}
+function pollHTML(opts){return `<div class="poll">`+opts.map(o=>`<div class="poll-opt"><span class="fill"></span><span class="lbl">${o[0]}</span><span class="pct">${o[1]}%</span></div>`).join('')+`</div>`;}
+function taskHTML(ts){return `<div class="task-list">`+ts.map(t=>`<div class="task"><span class="pri ${t[0]==='高'?'high':t[0]==='中'?'mid':'low'}">${t[0]}</span><span class="t-txt">${t[1]}</span><span class="t-who">${t[2]}</span></div>`).join('')+`</div>`;}
+function qaHTML(qas){return `<div class="qa-list">${qas.map(q=>`<div class="qa-item"><div class="qa-q">Q：${q[0]}</div><div class="qa-a">A：${q[1]}</div></div>`).join('')}</div><div class="qa-input"><input placeholder="向会议助手提问…"><button>提问</button></div>`;}
+/* 由日程 a2ui 数据对象直接生成场景卡片（角色合并进场景后复用同一套渲染） */
+function a2uiFromObj(a){
+  if(!a)return cardWrap('暂无内容',`<div class="note">该场景暂未配置内容。</div>`);
+  return cardWrap('议程',agHTML(a.agenda))
+    +cardWrap('实时互动',pollHTML(a.poll))
+    +cardWrap('关键要点',`<div class="note">${a.note}<div class="note-tags"><span class="chip">#要点</span></div></div>`)
+    +cardWrap('问答',qaHTML(a.qa));
+}
+
+/* ===== 渲染左栏：场景列表（按角色分组，首页置顶） ===== */
+const sceneList=document.getElementById('sceneList');
+const ROLE_GROUP=[{key:'',label:'首页'},{key:'meeting',label:'会议'},{key:'education',label:'教育'}];
+let _activeSet=false;
+ROLE_GROUP.forEach(g=>{
+  const items=SCENES.filter(s=>s.role===g.key);
+  if(!items.length)return;
+  if(g.key!==''){const c=document.createElement('div');c.className='scene-cat';c.textContent=g.label;sceneList.appendChild(c);}
+  items.forEach(s=>{
+    const el=document.createElement('div');
+    el.className='scene'+(!_activeSet?' active':'');
+    if(!_activeSet)_activeSet=true;
+    el.dataset.id=s.id;
+    el.innerHTML=`<div class="ico">${s.ico}</div><div class="meta"><div class="nm">${s.nm}</div><div class="ds">${s.ds}</div></div><div class="badge">${s.badge}</div>`;
+    el.onclick=()=>selectScene(s.id);
+    sceneList.appendChild(el);
+  });
+});
+
+/* ===== 常用功能 快捷区 ===== */
+const QUICK=[
+  {id:'weekly',qi:'📅',ql:'生成议程'},
+  {id:'review',qi:'🧐',ql:'发起投票'},
+  {id:'launch',qi:'🚀',ql:'记录纪要'},
+  {id:'retro',qi:'🔁',ql:'派发任务'},
+  {id:'oneone',qi:'💬',ql:'写笔记'},
+  {id:'train',qi:'🎓',ql:'培训议程'},
+];
+const quickGrid=document.getElementById('quickGrid');
+QUICK.forEach(q=>{
+  const el=document.createElement('div');
+  el.className='quick-item';
+  el.innerHTML=`<span class="qi">${q.qi}</span>${q.ql}`;
+  el.onclick=()=>quickSend(q);
+  quickGrid.appendChild(el);
+});
+/* 常用功能 = 对话快捷指令：在对话里发起，并切到对应场景结果 */
+function quickSend(q){
+  selectScene(q.id);                       // 切中列 A2UI + 加载场景对话
+  addMsg('me',q.ql,false);                 // 对话里追加用户指令
+  addMsg('ai','已为你生成「'+q.ql+'」，中间 A2UI 结果已更新。',false);
+  toast('已发起：'+q.ql);
+}
+
+/* 智能提示：基于「身份 + 当前日程 + 对话上下文」动态推荐 */
+const ROLE_RECS={
+  meeting:[{l:'发起投票收集决策',id:'review'},{l:'标记本周关键要点',id:'launch'},{l:'补充一个问答',id:null}],
+  education:[{l:'生成课堂实时互动',id:'review'},{l:'导出本节知识点',id:'launch'},{l:'布置课后作业',id:'retro'}],
+  parent:[{l:'查看孩子本周学情',id:null},{l:'联系班主任沟通',id:null},{l:'预约一次家长会',id:null}],
+  student:[{l:'查看本周作业',id:'retro'},{l:'向老师提问答疑',id:null},{l:'生成复习计划',id:'weekly'}],
+  all:[{l:'生成今日议程',id:'weekly'},{l:'发起投票',id:'review'},{l:'记录会议纪要',id:'launch'}],
+};
+const KW=[['投票','review'],['纪要','launch'],['议程','weekly'],['作业','retro'],['任务','retro'],['互动','review']];
+function getSmartTips(){
+  let base=ROLE_RECS.all.slice();
+  const chat=document.getElementById('chat');
+  const txt=chat?chat.innerText:'';
+  KW.forEach(([k,id])=>{                          // 对话命中关键词 → 该推荐置顶
+    if(txt.includes(k)){
+      const hit=ROLE_RECS.all.find(r=>r.id===id);
+      if(hit){base=base.filter(r=>r.l!==hit.l);base.unshift(hit);}
+    }
+  });
+  return base.slice(0,3);
+}
+function renderSmartTips(){
+  const box=document.getElementById('smartList');if(!box)return;
+  box.innerHTML='';
+  getSmartTips().forEach(t=>{
+    const el=document.createElement('div');el.className='smart-tip';
+    el.innerHTML='<span class="sm-ico">✦</span>'+t.l;
+    el.onclick=()=>tipSend(t);
+    box.appendChild(el);
+  });
+}
+function tipSend(t){
+  addMsg('me',t.l,false);
+  if(t.id)selectScene(t.id);                      // 同步刷新中列 A2UI 结果
+  addMsg('ai',t.id?'已为你生成「'+t.l+'」，中间 A2UI 结果已更新。':'好的，我来处理：'+t.l+'。',false);
+  toast('智能提示：'+t.l);
+}
+
+/* ===== 角色 × 日程 数据 ===== */
+const SCHEDULE_BY_ROLE={
+  meeting:[
+    {id:'m1',time:'09:30',title:'项目周会',ds:'例会 · 4 项议程',a2ui:{
+      agenda:[['周报汇总',1],['联调环境打通',0],['体验走查',0],['下版本排期',0]],
+      poll:[['方案A：稳健迭代',42],['方案B：一步到位',58]],
+      note:'重点：本周聚焦核心链路联调，下版本排期需周三前确认。',
+      qa:[['联调环境何时可用？','预计今天下午打通，已通知运维。']]}},
+    {id:'m2',time:'14:00',title:'需求评审',ds:'评审 · 投票决策',a2ui:{
+      agenda:[['背景介绍',1],['方案对比',0],['风险讨论',0]],
+      poll:[['方案 A',35],['方案 B',65]],
+      note:'结论倾向方案 B，需补充成本评估。',
+      qa:[['方案 B 的代价？','主要是首屏性能，已排期优化。']]}},
+    {id:'m3',time:'16:30',title:'产品发布会',ds:'发布 · 金句+任务',a2ui:{
+      agenda:[['彩排',0],['主讲',0],['互动',0]],
+      poll:[['满意度',90]],
+      note:'金句：「让每次会议都留下可执行的产物。」',
+      qa:[['回放何时出？','会后 2 小时。']]}},
+  ],
+  education:[
+    {id:'e1',time:'10:00',title:'高一数学·函数',ds:'课程 · 课堂互动',a2ui:{
+      agenda:[['知识点讲解',1],['例题演练',0],['随堂测验',0]],
+      poll:[['听懂了',80],['还需复习',20]],
+      note:'重点：函数定义域与值域的对应关系。',
+      qa:[['定义域怎么求？','看分母≠0、根号内≥0、对数真数>0。']]}},
+    {id:'e2',time:'15:00',title:'英语写作课',ds:'课程 · 答疑',a2ui:{
+      agenda:[['范文分析',1],['写作练习',0]],
+      poll:[['难度合适',70],['偏难',30]],
+      note:'本周重点：议论文结构。',
+      qa:[['如何提升词汇？','每日精读+摘抄 10 个高级表达。']]}},
+  ],
+  parent:[
+    {id:'p1',time:'今日',title:'小明·数学学情',ds:'学情 · 老师反馈',a2ui:{
+      agenda:[['本周表现',1],['薄弱点',0],['提升计划',0]],
+      poll:[['进步明显',60],['需关注',40]],
+      note:'小明函数章节掌握较好，几何待加强。',
+      qa:[['如何帮孩子提升？','每天 20 分钟针对性练习+错题本。']]}},
+  ],
+  student:[
+    {id:'s1',time:'今日',title:'我的作业·物理',ds:'作业 · 互动',a2ui:{
+      agenda:[['作业清单',1],['提交状态',0]],
+      poll:[['已完成',75],['进行中',25]],
+      note:'牛顿第二定律应用题注意单位换算。',
+      qa:[['这题怎么做？','先受力分析，再列 F=ma，最后代入求解。']]}},
+    {id:'s2',time:'明日',title:'我的课程·化学',ds:'课程 · 预习',a2ui:{
+      agenda:[['预习要点',0],['实验准备',0]],
+      poll:[['已预习',50],['未预习',50]],
+      note:'重点：氧化还原反应配平。',
+      qa:[['配平技巧？','化合价升降守恒法。']]}},
+  ],
+};
+SCHEDULE_BY_ROLE.all=[].concat(SCHEDULE_BY_ROLE.meeting,SCHEDULE_BY_ROLE.education,SCHEDULE_BY_ROLE.parent,SCHEDULE_BY_ROLE.student);
+
+let curItem=null;
+const canvas=document.getElementById('canvas');let cardSeq=0,curEditCard=null,showFavOnly=false;let cards=[];let pvSeq=0;let previews=[];
+const scheduleList=document.getElementById('scheduleList');
+function renderSchedule(){
+  scheduleList.innerHTML='';
+  SCHEDULE_BY_ROLE.all.forEach(it=>{
+    const el=document.createElement('div');
+    el.className='sched-item'+(curItem&&curItem.id===it.id?' active':'');
+    el.dataset.id=it.id;
+    el.innerHTML=`<div class="tm">${it.time}</div><div class="meta"><div class="nm">${it.title}</div><div class="ds">${it.ds}</div></div>`;
+    el.onclick=()=>switchSession(it.id);
+    scheduleList.appendChild(el);
+  });
+}
+/* 选中日程 = 切换整个会话（中间 A2UI 结果 + 右侧对话 一起切到该日程上下文） */
+const sessionCache=new Map();
+function switchSession(id){
+  const item=SCHEDULE_BY_ROLE.all.find(x=>x.id===id);
+  if(!item)return;
+  if(curItem&&canvas.children.length)sessionCache.set(curItem.id,{canvas:canvas.innerHTML,chat:chat.innerHTML});
+  curItem=item;
+  document.querySelectorAll('.sched-item').forEach(e=>e.classList.toggle('active',e.dataset.id===id));
+  document.querySelectorAll('.scene').forEach(e=>e.classList.remove('active'));
+  if(sessionCache.has(id)){
+    canvas.innerHTML=sessionCache.get(id).canvas;
+    chat.innerHTML=sessionCache.get(id).chat;
+    rebindCanvas();
+  }else{
+    cards.length=0;curEditCard=null;
+    canvas.innerHTML='';chat.innerHTML='';
+    makeSceneCards(item);
+    addMsg('ai','已生成「'+item.title+'」的议程 / 实时互动 / 关键要点 / 问答 4 张卡片，可分别关闭、选中后在右侧对话中修改或收藏。',false);
+  }
+  renderSmartTips();
+}
+/* 切换回来时：用缓存的 DOM 重建交互绑定与卡片索引 */
+function rebindCanvas(){
+  cards.length=0;curEditCard=null;
+  canvas.querySelectorAll('.sm-card').forEach(sm=>{
+    const id=sm.dataset.id;
+    const star=sm.querySelector('.rc-btn.star');
+    const title=(sm.querySelector('.rc-title')||{}).textContent||'卡片';
+    cards.push({id,title,fav:!!(star&&star.classList.contains('on'))});
+    rebindSm(sm);
+  });
+  updateSelUI();
+}
+function rebindSm(sm){
+  const id=sm.dataset.id;
+  const star=sm.querySelector('.rc-btn.star');
+  const sel=sm.querySelector('.rc-btn.sel');
+  const close=sm.querySelector('.rc-btn.close');
+  const pin=sm.querySelector('.rc-btn.pin');
+  if(star)star.onclick=e=>{e.stopPropagation();toggleFav(id,sm);};
+  if(sel){sel.onclick=e=>{e.stopPropagation();selectEdit(id);};sm.querySelector('.sm-head').onclick=()=>selectEdit(id);}
+  if(close)close.onclick=e=>{e.stopPropagation();sm.classList.contains('remote')?closeRemote(sm):closeCard(id,sm);};
+  if(pin)pin.onclick=e=>{e.stopPropagation();clearInterval(sm._timer);pinRemote(sm,sm.dataset.client||'客户端');};
+  const cast=sm.querySelector('.rc-btn.cast');
+  if(cast)cast.onclick=e=>{e.stopPropagation();openClientOp(id);};
+  bindCard(sm);
+}
+function renderDetail(item){
+  const a=item.a2ui;
+  return cardWrap('议程',agHTML(a.agenda))
+    +cardWrap('实时互动',pollHTML(a.poll))
+    +cardWrap('关键要点',`<div class="note">${a.note}<div class="note-tags"><span class="chip">#要点</span></div></div>`)
+    +cardWrap('问答',qaHTML(a.qa));
+}
+/* ===== 多卡片：新增 / 绑定 / 选中 / 关闭 / 收藏 =====
+   所有卡片均为顶层 sm-card（议程 / 实时互动 / 关键要点 / 问答 / 场景 / 生成结果 / 客户端投屏），
+   不支持分类与嵌套，每张卡片各自支持 关闭 / 选中修改 / 收藏。 */
+/* 由一段 a2ui-card HTML 直接生成顶层小卡片（可含多个段落） */
+function spawnFromA2UI(html,extraClass,select){
+  const tmp=document.createElement('div');tmp.innerHTML=html;
+  tmp.querySelectorAll('.a2ui-card').forEach(ac=>{
+    const title=ac.querySelector('.a2ui-title')?ac.querySelector('.a2ui-title').textContent.trim():'卡片';
+    const tt=ac.querySelector('.a2ui-title');if(tt)tt.remove();
+    spawnSmall(title,ac.innerHTML,extraClass,select);
+  });
+}
+/* 日程会话：直接生成 4 张顶层小卡片（不再包裹大卡片） */
+function makeSceneCards(item){
+  const a=item.a2ui;
+  spawnSmall('议程',agHTML(a.agenda));
+  spawnSmall('实时互动',pollHTML(a.poll));
+  spawnSmall('关键要点',`<div class="note">${a.note}<div class="note-tags"><span class="chip">#要点</span></div></div>`);
+  spawnSmall('问答',qaHTML(a.qa));
+}
+/* 生成一张顶层小卡片并追加到中间结果区；select=true 时该卡片默认进入选中态 */
+function spawnSmall(title,bodyHTML,extraClass,select){
+  const id='card'+(++cardSeq);
+  const sm=document.createElement('div');
+  sm.className='sm-card'+(extraClass?(' '+extraClass):'');
+  sm.dataset.id=id;
+  sm.innerHTML=`<div class="sm-head"><span class="rc-dot"></span><span class="rc-title">${title}</span>`
+    +`<div class="rc-actions"><button class="rc-btn star" title="收藏">☆</button>`
+    +`<button class="rc-btn sel" title="选中后在对话中修改">✎</button>`
+    +`<button class="rc-btn cast" title="客户端操作（扫码抢答/投屏 · 推送）">📱</button>`
+    +`<button class="rc-btn close" title="关闭">×</button></div></div>`
+    +`<div class="sm-body">${bodyHTML}</div><div class="rc-foot"></div>`;
+  sm.querySelector('.star').onclick=e=>{e.stopPropagation();toggleFav(id,sm);};
+  sm.querySelector('.sel').onclick=e=>{e.stopPropagation();selectEdit(id);};
+  sm.querySelector('.sm-head').onclick=()=>selectEdit(id);
+  sm.querySelector('.cast').onclick=e=>{e.stopPropagation();openClientOp(id);};
+  sm.querySelector('.close').onclick=e=>{e.stopPropagation();closeCard(id,sm);};
+  canvas.appendChild(sm);
+  cards.push({id,title,fav:false});
+  bindCard(sm);
+  if(select)curEditCard=id;
+  updateSelUI();
+  return sm;
+}
+function bindCard(root){
+  const ag=root.querySelector('.ag');if(ag)bindAg(ag);
+  const poll=root.querySelector('.poll');if(poll)bindPoll(poll);
+  const qs=root.querySelector('.qa-input button');if(qs)qs.onclick=()=>qaAsk(root);
+  const qi=root.querySelector('.qa-input input');if(qi)qi.addEventListener('keydown',e=>{if(e.key==='Enter')qaAsk(root);});
+}
+function bindAg(agEl){
+  agEl.querySelectorAll('.ag-item').forEach(it=>it.onclick=()=>{
+    it.classList.toggle('done');it.querySelector('.ag-check').classList.toggle('on');
+    const card=agEl.closest('.sm-card');const bar=card&&card.querySelector('.progress > i');
+    const total=agEl.querySelectorAll('.ag-item').length;
+    const done=agEl.querySelectorAll('.ag-item.done').length;
+    if(bar)bar.style.width=(total?done/total*100:0)+'%';
+  });
+}
+function bindPoll(pollEl){
+  pollEl.querySelectorAll('.poll-opt').forEach(op=>op.onclick=()=>{
+    pollEl.querySelectorAll('.poll-opt').forEach(x=>x.classList.remove('chosen'));
+    op.classList.add('chosen');op.style.setProperty('--w',op.querySelector('.pct').textContent);toast('已投票');
+  });
+}
+function qaAsk(root){
+  const inp=root.querySelector('.qa-input input');const v=inp.value.trim();if(!v)return;
+  const list=root.querySelector('.qa-list');
+  list.insertAdjacentHTML('beforeend',`<div class="qa-item"><div class="qa-q">Q：${v}</div><div class="qa-a">A：已记录，会议助手将于会后补充完整答复。</div></div>`);
+  inp.value='';list.scrollTop=list.scrollHeight;toast('已提交提问');
+}
+function selectEdit(id){curEditCard=(curEditCard===id)?null:id;updateSelUI();if(curEditCard)toast('已选中卡片，可在右侧对话中继续修改');}
+/* 关闭小卡片：移除该片段；若大卡片已空则连带收掉整张大卡片 */
+function closeCard(id,sm){
+  cards=cards.filter(c=>c.id!==id);
+  sm.remove();
+  if(curEditCard===id)curEditCard=null;
+  updateSelUI();
+}
+function toggleFav(id,wrap){const c=cards.find(x=>x.id===id);if(!c)return;c.fav=!c.fav;const b=wrap.querySelector('.rc-btn.star');b.classList.toggle('on',c.fav);b.textContent=c.fav?'★':'☆';toast(c.fav?'已收藏':'已取消收藏');updateSelUI();}
+function updateSelUI(){
+  document.querySelectorAll('.sm-card').forEach(c=>{
+    const on=c.dataset.id===curEditCard;c.classList.toggle('active',on);
+    const s=c.querySelector('.rc-btn.sel');if(s)s.classList.toggle('on',on);
+  });
+  document.querySelectorAll('.sm-card').forEach(c=>{const card=cards.find(x=>x.id===c.dataset.id);c.style.display=(showFavOnly&&card&&!card.fav)?'none':'';});
+  const eb=document.getElementById('editBar');
+  if(curEditCard){const c=cards.find(x=>x.id===curEditCard);if(c){eb.classList.add('show');eb.innerHTML='✎ 正在修改：<b>'+c.title+'</b> · 输入消息即可迭代';document.getElementById('msgInput').placeholder='修改「'+c.title+'」：…';}else{eb.classList.remove('show');document.getElementById('msgInput').placeholder='描述你要生成的会议界面…';}}
+  else{eb.classList.remove('show');eb.innerHTML='';document.getElementById('msgInput').placeholder='描述你要生成的会议界面…';}
+}
+
+/* 左栏：整条左侧栏平滑折叠 / 展开（中栏左缘边缘手柄，业界交互） */
+function toggleLeft(){
+  const wb=document.getElementById('workbench');
+  wb.classList.toggle('left-collapsed');
+}
+document.getElementById('colHandle').onclick=toggleLeft;
+
+/* 右栏：用户对话平滑折叠 / 展开（贴右栏左缘的边缘手柄，与左侧日程手柄对称） */
+function toggleRight(){
+  document.getElementById('workbench').classList.toggle('right-collapsed');
+}
+document.getElementById('rightHandle').onclick=toggleRight;
+
+/* ===== 选场景 → 中列新增场景卡片 + 右栏对话 ===== */
+function selectScene(id){
+  document.querySelectorAll('.sched-item').forEach(e=>e.classList.remove('active'));
+  document.querySelectorAll('.scene').forEach(e=>e.classList.toggle('active',e.dataset.id===id));
+  const s=SCENES.find(x=>x.id===id);
+  spawnFromA2UI(A2UI[id]());
+  addMsg('ai','已生成场景卡片「'+s.nm+'」。',false);
+  renderSmartTips();
+}
+
+function addMsg(role,text,anim=true){
+  const c=document.getElementById('chat');
+  const m=document.createElement('div');
+  m.className='msg '+(role==='me'?'me':'ai');
+  m.innerHTML=`<div class="avatar">${role==='me'?'我':'A'}</div><div class="bubble">${text}</div>`;
+  if(!anim)m.style.animation='none';
+  c.appendChild(m);c.scrollTop=c.scrollHeight;
+}
+
+/* ===== A2UI 组件渲染已统一由 bindCard 按卡片作用域绑定 ===== */
+
+/* ===== 发送消息（右栏）：若选中卡片则在对话中继续修改该卡片 ===== */
+/* ===== 对话生成的 A2UI 结果：先在对话区显示预览卡，点击或拖入中间区域落盘 ===== */
+function generateFromText(v){
+  const map={投票:'review',纪要:'launch',记录:'launch',议程:'weekly',作业:'retro',任务:'retro',互动:'review',培训:'train',笔记:'oneone',评审:'review'};
+  let sid=null;
+  for(const k in map){if(v.includes(k)){sid=map[k];break;}}
+  if(sid){const s=SCENES.find(x=>x.id===sid);return {title:'场景 · '+s.nm, html:A2UI[sid]()};}
+  const first=SCHEDULE_BY_ROLE.all[0];
+  const note=`<div class="note">${v}<div class="note-tags"><span class="chip">#生成</span></div></div>`;
+  return {title:(first?first.title:'A2UI')+' · 生成结果', html:cardWrap('要点',note)};
+}
+/* 在对话气泡内插入一张可点击 / 可拖拽的预览卡 */
+function addPreviewCard(title,html){
+  const id='pv'+(++pvSeq);
+  previews.push({id,title,html,placed:false});
+  const c=document.getElementById('chat');
+  const m=document.createElement('div');m.className='msg ai';
+  m.innerHTML=`<div class="avatar">A</div><div class="bubble" style="max-width:94%;"></div>`;
+  const b=m.querySelector('.bubble');
+  b.innerHTML=`<div class="pv-hint">A2UI 结果预览 · 点击卡片或拖入中间区域放入</div>`
+    +`<div class="pv-card" id="${id}" draggable="true">${html}</div>`
+    +`<div class="pv-actions"><button class="pv-btn">↗ 放入结果区</button></div>`;
+  c.appendChild(m);c.scrollTop=c.scrollHeight;
+  const card=b.querySelector('.pv-card');
+  card.addEventListener('click',()=>promotePreview(id));
+  card.addEventListener('dragstart',e=>{e.dataTransfer.setData('text/plain',id);e.dataTransfer.effectAllowed='copy';card.classList.add('dragging');});
+  card.addEventListener('dragend',()=>card.classList.remove('dragging'));
+  b.querySelector('.pv-btn').addEventListener('click',e=>{e.stopPropagation();promotePreview(id);});
+}
+/* 把预览卡落盘到中间 A2UI 结果区（转为正式大/小卡片） */
+function promotePreview(id){
+  const pv=previews.find(p=>p.id===id);if(!pv||pv.placed)return;
+  pv.placed=true;
+  spawnFromA2UI(pv.html,null,true);
+  const el=document.getElementById(id);
+  if(el){el.classList.add('placed');el.draggable=false;el.querySelector('.pv-actions').innerHTML='<span class="pv-done">✓ 已放入结果区</span>';}
+  toast('已放入 A2UI 结果区');
+  renderSmartTips();
+}
+/* 中间结果区作为放置目标 */
+canvas.addEventListener('dragover',e=>{e.preventDefault();e.dataTransfer.dropEffect='copy';canvas.classList.add('drop-hot');});
+canvas.addEventListener('dragleave',e=>{if(!canvas.contains(e.relatedTarget))canvas.classList.remove('drop-hot');});
+canvas.addEventListener('drop',e=>{e.preventDefault();canvas.classList.remove('drop-hot');const id=e.dataTransfer.getData('text/plain');if(id)promotePreview(id);});
+
+function send(){
+  const inp=document.getElementById('msgInput');const v=inp.value.trim();if(!v)return;
+  addMsg('me',v);inp.value='';
+  const c=document.getElementById('chat');
+  const t=document.createElement('div');t.className='msg ai';
+  t.innerHTML=`<div class="avatar">A</div><div class="bubble"><span class="typing"><span></span><span></span><span></span></span></div>`;
+  c.appendChild(t);c.scrollTop=c.scrollHeight;
+  const target=cards.find(x=>x.id===curEditCard);
+  setTimeout(()=>{
+    if(target){
+      t.querySelector('.bubble').textContent='已根据你的要求修改「'+target.title+'」。';
+      const wrap=document.querySelector('.sm-card[data-id="'+target.id+'"]');
+      if(wrap){const foot=wrap.querySelector('.rc-foot');foot.classList.add('show');foot.insertAdjacentHTML('beforeend',`<div class="rec">${v}</div>`);}
+    }else{
+      const g=generateFromText(v);
+      t.querySelector('.bubble').textContent='已为你生成 A2UI 结果预览，点击卡片或拖入中间区域即可放入。';
+      addPreviewCard(g.title,g.html);
+    }
+    renderSmartTips();
+  },900);
+}
+document.getElementById('sendBtn').onclick=send;
+document.getElementById('msgInput').addEventListener('keydown',e=>{if(e.key==='Enter')send();});
+
+/* ===== 全屏演示 ===== */
+document.getElementById('fsBtn').onclick=()=>{
+  let html,title;
+  if(curEditCard){const wrap=document.querySelector('.sm-card[data-id="'+curEditCard+'"]');html=wrap?wrap.querySelector('.sm-body').innerHTML:document.getElementById('canvas').innerHTML;title=(cards.find(x=>x.id===curEditCard)||{}).title||'全部结果';}
+  else{html=document.getElementById('canvas').innerHTML;title='全部结果';}
+  document.getElementById('fsInner').innerHTML=html;
+  document.getElementById('fsTitle').textContent='A2UI 全屏演示 · '+title;
+  document.getElementById('fullscreen').classList.add('open');
+};
+document.getElementById('fsClose').onclick=()=>document.getElementById('fullscreen').classList.remove('open');
+
+/* ===== Toast ===== */
+let tt;function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),1800);}
+
+/* ===== 客户端投屏（本端为大屏服务端） =====
+   已连接客户端 APP 可把生成的小卡片投到中间区域；
+   投来的卡片：细微区分色 + 来自标识 + 30s 倒计时（到点自动消失）+ 固定；
+   固定后移除区分色与倒计时，转为与本端小卡片完全一致（收藏/选中修改/关闭）。 */
+const CLIENTS=[
+  {id:'c1',name:'会控 iPad',dev:'pad'},
+  {id:'c2',name:'李老师手机',dev:'phone'},
+];
+function renderClients(){
+  const box=document.getElementById('clients');box.innerHTML='';
+  CLIENTS.forEach(c=>{
+    const el=document.createElement('span');el.className='client-chip';
+    el.innerHTML=`<span class="dot"></span>${c.name}<span class="dev">· ${c.dev==='pad'?'平板':'手机'}</span>`;
+    box.appendChild(el);
+  });
+}
+const REMOTE_TTL=30;
+function pickClientCard(){
+  const set=[
+    {title:'现场投票', body:cardWrap('现场投票',pollHTML([['方案A 稳健迭代',46],['方案B 一步到位',54]]))},
+    {title:'共享要点', body:cardWrap('要点同步',`<div class="note">客户端分享：本周聚焦核心链路联调，下版本排期周三前确认。<div class="note-tags"><span class="chip">#客户端</span></div></div>`)},
+    {title:'观众提问', body:cardWrap('观众提问',qaHTML([['这个方案的成本？','客户端暂未答复，已转会议助手。']]))},
+    {title:'临时议程', body:cardWrap('临时议程',`<div class="ag"><div class="ag-item"><div class="ag-check"></div><div class="ag-text">开场介绍</div></div><div class="ag-item"><div class="ag-check"></div><div class="ag-text">进度同步</div></div><div class="progress"><i style="width:0%"></i></div></div>`)},
+  ];
+  return set[Math.floor(Math.random()*set.length)];
+}
+function castFromClient(client){
+  const pick=pickClientCard();
+  const id='remote'+(++cardSeq);
+  const sm=document.createElement('div');
+  sm.className='sm-card remote';sm.dataset.id=id;sm.dataset.client=client.name;
+  sm.innerHTML=`<div class="from">来自 ${client.name}</div>`
+    +`<div class="sm-head"><span class="rc-dot"></span><span class="rc-title">${pick.title}（投屏）</span>`
+    +`<div class="rc-actions"><button class="rc-btn pin" title="固定到本端">📌</button>`
+    +`<button class="rc-btn close" title="关闭">×</button></div></div>`
+    +`<div class="sm-body"></div><div class="cd-wrap"><div class="cd-bar"></div></div>`;
+  sm.querySelector('.sm-body').innerHTML=pick.body;
+  bindCard(sm);
+  canvas.insertBefore(sm,canvas.firstChild);canvas.scrollTop=0;
+  let remain=REMOTE_TTL;const bar=sm.querySelector('.cd-bar');
+  const timer=setInterval(()=>{
+    remain-=0.2;
+    if(remain<=0){clearInterval(timer);closeRemote(sm);return;}
+    bar.style.width=(remain/REMOTE_TTL*100)+'%';
+  },200);
+  sm._timer=timer;
+  sm.querySelector('.close').onclick=e=>{e.stopPropagation();clearInterval(timer);closeRemote(sm);};
+  sm.querySelector('.pin').onclick=e=>{e.stopPropagation();clearInterval(timer);pinRemote(sm,client.name);};
+  toast('📱 '+client.name+' 投来一张卡片（30s 后消失，可固定）');
+}
+function closeRemote(sm){clearInterval(sm._timer);sm.remove();updateSelUI();}
+function pinRemote(sm,clientName){
+  sm.classList.remove('remote');
+  const from=sm.querySelector('.from');if(from)from.remove();
+  const cd=sm.querySelector('.cd-wrap');if(cd)cd.remove();
+  const actions=sm.querySelector('.rc-actions');
+  actions.innerHTML=`<button class="rc-btn star" title="收藏">☆</button>`
+    +`<button class="rc-btn sel" title="选中后在对话中修改">✎</button>`
+    +`<button class="rc-btn cast" title="客户端操作（扫码抢答/投屏 · 推送）">📱</button>`
+    +`<button class="rc-btn close" title="关闭">×</button>`;
+  const titleEl=sm.querySelector('.rc-title');if(titleEl)titleEl.textContent=titleEl.textContent.replace('（投屏）','');
+  const id='card'+(++cardSeq);sm.dataset.id=id;
+  sm.querySelector('.star').onclick=e=>{e.stopPropagation();toggleFav(id,sm);};
+  sm.querySelector('.sel').onclick=e=>{e.stopPropagation();selectEdit(id);};
+  sm.querySelector('.sm-head').onclick=()=>selectEdit(id);
+  sm.querySelector('.cast').onclick=e=>{e.stopPropagation();openClientOp(id);};
+  sm.querySelector('.close').onclick=e=>{e.stopPropagation();closeCard(id,sm);};
+  cards.push({id,title:titleEl?titleEl.textContent.trim():'卡片',fav:false});
+  updateSelUI();
+  toast('已固定：'+(clientName||'客户端')+' 的卡片转为本端卡片');
+}
+document.getElementById('simCast').onclick=()=>castFromClient(CLIENTS[Math.floor(Math.random()*CLIENTS.length)]);
+
+/* ===== 卡片：开启客户端操作（扫码抢答/投屏 + 推送到已连接客户端） ===== */
+let opCardId=null, opModes={rush:false,cast:false}, opPushed=new Set();
+function openClientOp(id){
+  const c=cards.find(x=>x.id===id);if(!c)return;
+  opCardId=id;opModes={rush:false,cast:false};opPushed=new Set();
+  document.getElementById('opSub').textContent='卡片：'+c.title;
+  drawOpQR(document.getElementById('opQR'),id+'|'+c.title);
+  renderOpClients();renderOpModes();
+  document.querySelectorAll('.rc-btn.cast').forEach(b=>{const sc=b.closest('.sm-card');b.classList.toggle('on',sc&&sc.dataset.id===id);});
+  document.getElementById('opModal').classList.add('open');
+}
+function closeOp(){
+  document.getElementById('opModal').classList.remove('open');
+  document.querySelectorAll('.rc-btn.cast').forEach(b=>b.classList.remove('on'));
+}
+/* 生成装饰性二维码（含三个定位角 + 伪随机模块，原型示意，非真实编码） */
+function drawOpQR(canvas,seedStr){
+  const N=25,cell=6,size=N*cell;
+  canvas.width=size;canvas.height=size;
+  const ctx=canvas.getContext('2d');
+  ctx.fillStyle='#fff';ctx.fillRect(0,0,size,size);
+  let h=2166136261>>>0;
+  for(let i=0;i<seedStr.length;i++){h^=seedStr.charCodeAt(i);h=Math.imul(h,16777619)>>>0;}
+  const rnd=()=>{h^=h<<13;h>>>=0;h^=h>>17;h^=h<<5;h>>>=0;return h/4294967296;};
+  const inFinder=(r,c)=>(r<7&&c<7)||(r<7&&c>=N-7)||(r>=N-7&&c<7);
+  const finder=(r,c)=>{const R=r<N/2?0:N-7,C=c<N/2?0:N-7;const rr=r-R,cc=c-C;if(rr===0||rr===6||cc===0||cc===6)return true;if(rr>=2&&rr<=4&&cc>=2&&cc<=4)return true;return false;};
+  ctx.fillStyle='#1A1A1A';
+  for(let r=0;r<N;r++)for(let c=0;c<N;c++){
+    let on;if(inFinder(r,c))on=finder(r,c);else on=rnd()>0.5;
+    if(on)ctx.fillRect(c*cell,r*cell,cell,cell);
+  }
+}
+function renderOpModes(){
+  const cap=document.getElementById('opQrCap');
+  const parts=[];if(opModes.rush)parts.push('抢答');if(opModes.cast)parts.push('投屏');
+  cap.textContent=parts.length?('扫码参与：'+parts.join(' / ')):'扫码参与';
+}
+function renderOpClients(){
+  const box=document.getElementById('opClients');box.innerHTML='';
+  CLIENTS.forEach(c=>{
+    const pushed=opPushed.has(c.id);
+    const el=document.createElement('div');el.className='op-client';
+    el.innerHTML=`<span class="dot"></span><span class="nm">${c.name}</span><span class="dev">${c.dev==='pad'?'平板':'手机'}</span>`
+      +`<button class="op-push-one${pushed?' done':''}">${pushed?'✓ 已推送':'推送'}</button>`;
+    el.querySelector('.op-push-one').onclick=()=>pushToClient(opCardId,c);
+    box.appendChild(el);
+  });
+}
+function pushToClient(cardId,c){
+  if(opPushed.has(c.id))return;
+  const card=cards.find(x=>x.id===cardId);const title=card?card.title:'';
+  opPushed.add(c.id);renderOpClients();
+  toast('已推送「'+title+'」到 '+c.name);
+}
+function pushAll(){
+  const card=cards.find(x=>x.id===opCardId);const title=card?card.title:'';
+  CLIENTS.forEach(c=>opPushed.add(c.id));renderOpClients();
+  toast('已推送「'+title+'」到 '+CLIENTS.length+' 台客户端');
+}
+document.getElementById('opClose').onclick=closeOp;
+document.getElementById('opPushAll').onclick=pushAll;
+document.getElementById('opModal').addEventListener('click',e=>{if(e.target.id==='opModal')closeOp();});
+document.querySelectorAll('.op-mode').forEach(b=>b.onclick=()=>{
+  const m=b.dataset.mode;opModes[m]=!opModes[m];b.classList.toggle('on',opModes[m]);
+  renderOpModes();
+  toast(opModes[m]?('已开启'+b.textContent.trim()+'，扫码即可参与'):('已关闭'+b.textContent.trim()));
+});
+
+/* 初始化 */
+applyTheme('dark');
+renderClients();
+renderSchedule();
+selectScene('home');
+</script>
+</body>
+</html>
