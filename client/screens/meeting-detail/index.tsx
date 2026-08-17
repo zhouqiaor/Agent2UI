@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   ScrollView,
   Pressable,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { Screen } from '@/components/Screen';
@@ -13,14 +14,20 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 import { A2UIRenderer } from '@/components/a2ui/A2UIRenderer';
 import { useA2UIStream } from '@/hooks/useA2UIStream';
-import type { Meeting } from '@/utils/a2ui-types';
+import { useResponsive } from '@/hooks/useResponsive';
+import type { Meeting, A2UIComponent } from '@/utils/a2ui-types';
 
 const EXPO_PUBLIC_BACKEND_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_BASE_URL;
+
+// Interaction-related components shown in the right column on tablet
+const INTERACTION_TYPES = new Set(['poll', 'qa', 'task_list', 'action_button']);
+const INFO_TYPES = new Set(['heading', 'text', 'agenda', 'note', 'divider']);
 
 export default function MeetingDetailScreen() {
   const insets = useSafeAreaInsets();
   const router = useSafeRouter();
   const { id } = useSafeSearchParams<{ id: string }>();
+  const { shouldUseTwoColumn, isTablet } = useResponsive();
   const [meeting, setMeeting] = useState<Meeting | null>(null);
   const [loadingMeeting, setLoadingMeeting] = useState(true);
 
@@ -73,6 +80,25 @@ export default function MeetingDetailScreen() {
     []
   );
 
+  // Split components into info and interaction columns for tablet landscape
+  const { infoComponents, interactionComponents } = useMemo(() => {
+    if (!shouldUseTwoColumn) {
+      return { infoComponents: components, interactionComponents: [] as A2UIComponent[] };
+    }
+    const info: A2UIComponent[] = [];
+    const interaction: A2UIComponent[] = [];
+    components.forEach((c) => {
+      if (INTERACTION_TYPES.has(c.type)) {
+        interaction.push(c);
+      } else if (INFO_TYPES.has(c.type) || interaction.length === 0) {
+        info.push(c);
+      } else {
+        interaction.push(c);
+      }
+    });
+    return { infoComponents: info, interactionComponents: interaction };
+  }, [components, shouldUseTwoColumn]);
+
   if (loadingMeeting) {
     return (
       <Screen>
@@ -86,16 +112,23 @@ export default function MeetingDetailScreen() {
   return (
     <Screen safeAreaEdges={['left', 'right', 'bottom']}>
       {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
-        <Pressable style={styles.backBtn} onPress={() => router.back()}>
-          <FontAwesome6 name="chevron-left" size={18} color="#1E293B" />
-        </Pressable>
+      <View style={[styles.header, { paddingTop: insets.top + (isTablet ? 16 : 8) }]}>
+        {!isTablet && (
+          <Pressable style={styles.backBtn} onPress={() => router.back()}>
+            <FontAwesome6 name="chevron-left" size={18} color="#1E293B" />
+          </Pressable>
+        )}
+        {isTablet && (
+          <Pressable style={styles.backBtn} onPress={() => router.back()}>
+            <FontAwesome6 name="arrow-left" size={18} color="#1E293B" />
+          </Pressable>
+        )}
         <View style={styles.headerCenter}>
           <Text style={styles.headerTitle} numberOfLines={1}>
             {meeting?.title || '会议详情'}
           </Text>
           <Text style={styles.headerSubtitle}>
-            {meeting?.organizer} · {meeting?.participants}人参与
+            {meeting?.organizer} · {meeting?.participants}人参与 · {meeting?.location}
           </Text>
         </View>
         <View style={styles.headerRight}>
@@ -108,21 +141,125 @@ export default function MeetingDetailScreen() {
         </View>
       </View>
 
-      {/* A2UI Content */}
-      <ScrollView
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-      >
-        <A2UIRenderer 
-          components={components} 
-          onAction={handleAction} 
-          isLoading={streamLoading && components.length === 0}
-        />
+      {/* Tablet landscape: two-column layout */}
+      {shouldUseTwoColumn ? (
+        <View style={styles.twoColumnContainer}>
+          {/* Left: info / agenda / notes */}
+          <ScrollView
+            style={styles.leftColumn}
+            contentContainerStyle={styles.twoColumnContent}
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Meeting info card */}
+            {meeting && (
+              <View style={styles.meetingInfoCard}>
+                <View style={styles.infoRow}>
+                  <View style={styles.infoIcon}>
+                    <FontAwesome6 name="clock" size={14} color="#4F46E5" />
+                  </View>
+                  <Text style={styles.infoText}>{meeting.time}</Text>
+                </View>
+                <View style={styles.infoRow}>
+                  <View style={styles.infoIcon}>
+                    <FontAwesome6 name="location-dot" size={14} color="#4F46E5" />
+                  </View>
+                  <Text style={styles.infoText}>{meeting.location}</Text>
+                </View>
+                <View style={styles.infoRow}>
+                  <View style={[styles.statusBadge, { backgroundColor: getStatusColor(meeting.status) + '15' }]}>
+                    <Text style={[styles.statusText, { color: getStatusColor(meeting.status) }]}>
+                      {getStatusLabel(meeting.status)}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            )}
 
-        <View style={{ height: 100 }} />
-      </ScrollView>
+            <A2UIRenderer 
+              components={infoComponents} 
+              onAction={handleAction}
+              isLoading={streamLoading && infoComponents.length === 0}
+            />
+            <View style={{ height: 40 }} />
+          </ScrollView>
+
+          {/* Right: interactions (polls, QA, tasks) */}
+          <ScrollView
+            style={styles.rightColumn}
+            contentContainerStyle={styles.twoColumnContent}
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.rightColumnHeader}>
+              <FontAwesome6 name="comments" size={16} color="#4F46E5" />
+              <Text style={styles.rightColumnTitle}>实时互动</Text>
+            </View>
+            <A2UIRenderer 
+              components={interactionComponents} 
+              onAction={handleAction}
+              isLoading={streamLoading && interactionComponents.length === 0 && infoComponents.length > 0}
+            />
+            <View style={{ height: 40 }} />
+          </ScrollView>
+        </View>
+      ) : (
+        /* Phone / portrait: single column */
+        <ScrollView
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Meeting info card (mobile) */}
+          {meeting && (
+            <View style={styles.meetingInfoCardMobile}>
+              <View style={styles.infoRow}>
+                <View style={styles.infoIcon}>
+                  <FontAwesome6 name="clock" size={14} color="#4F46E5" />
+                </View>
+                <Text style={styles.infoText}>{meeting.time}</Text>
+              </View>
+              <View style={styles.infoRow}>
+                <View style={styles.infoIcon}>
+                  <FontAwesome6 name="location-dot" size={14} color="#4F46E5" />
+                </View>
+                <Text style={styles.infoText}>{meeting.location}</Text>
+              </View>
+              <View style={styles.infoRow}>
+                <View style={[styles.statusBadge, { backgroundColor: getStatusColor(meeting.status) + '15' }]}>
+                  <Text style={[styles.statusText, { color: getStatusColor(meeting.status) }]}>
+                    {getStatusLabel(meeting.status)}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          )}
+
+          <A2UIRenderer 
+            components={components} 
+            onAction={handleAction} 
+            isLoading={streamLoading && components.length === 0}
+          />
+          <View style={{ height: 100 }} />
+        </ScrollView>
+      )}
     </Screen>
   );
+}
+
+function getStatusColor(status: string): string {
+  switch (status) {
+    case 'live': return '#10B981';
+    case 'upcoming': return '#4F46E5';
+    case 'ended': return '#94A3B8';
+    default: return '#94A3B8';
+  }
+}
+
+function getStatusLabel(status: string): string {
+  switch (status) {
+    case 'live': return '进行中';
+    case 'upcoming': return '即将开始';
+    case 'ended': return '已结束';
+    default: return status;
+  }
 }
 
 const styles = StyleSheet.create({
@@ -181,13 +318,97 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 16,
   },
-  loadingState: {
-    alignItems: 'center',
-    paddingVertical: 40,
-    gap: 12,
+  // Two-column layout (tablet landscape)
+  twoColumnContainer: {
+    flex: 1,
+    flexDirection: 'row',
   },
-  loadingText: {
+  leftColumn: {
+    flex: 3,
+    borderRightWidth: StyleSheet.hairlineWidth,
+    borderRightColor: 'rgba(148,163,184,0.2)',
+  },
+  rightColumn: {
+    flex: 2,
+    backgroundColor: 'rgba(79,70,229,0.02)',
+  },
+  twoColumnContent: {
+    padding: 24,
+  },
+  rightColumnHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(79,70,229,0.1)',
+  },
+  rightColumnTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1E293B',
+  },
+  // Meeting info cards
+  meetingInfoCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 20,
+    gap: 12,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#4F46E5',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.08,
+        shadowRadius: 12,
+      },
+      android: { elevation: 3 },
+      web: { boxShadow: '0 4px 12px rgba(79,70,229,0.08)' },
+    }),
+  },
+  meetingInfoCardMobile: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    gap: 10,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#4F46E5',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.06,
+        shadowRadius: 8,
+      },
+      android: { elevation: 2 },
+      web: { boxShadow: '0 2px 8px rgba(79,70,229,0.06)' },
+    }),
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  infoIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: 'rgba(79,70,229,0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  infoText: {
     fontSize: 14,
-    color: '#64748B',
+    color: '#475569',
+    fontWeight: '500',
+  },
+  statusBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: '600',
   },
 });

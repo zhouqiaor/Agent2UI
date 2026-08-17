@@ -16,13 +16,12 @@ import { useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Onboarding } from '@/components/Onboarding';
 import { MeetingCardSkeleton } from '@/components/Skeleton';
-import SidebarNav from '@/components/SidebarNav';
 import { useResponsive } from '@/hooks/useResponsive';
 import type { Meeting } from '@/utils/a2ui-types';
 
 const EXPO_PUBLIC_BACKEND_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_BASE_URL;
 
-const statusConfig = {
+const statusConfig: Record<'ongoing' | 'upcoming' | 'completed', { label: string; color: string; bg: string }> = {
   ongoing: { label: '进行中', color: '#10B981', bg: 'rgba(16,185,129,0.1)' },
   upcoming: { label: '即将开始', color: '#F59E0B', bg: 'rgba(245,158,11,0.1)' },
   completed: { label: '已结束', color: '#94A3B8', bg: 'rgba(148,163,184,0.1)' },
@@ -246,7 +245,6 @@ export default function MeetingsScreen() {
         )}
         <View style={{ height: 100 }} />
       </ScrollView>
-      {shouldUseSidebar && <SidebarNav currentTab="meetings" />}
     </Screen>
   );
 }

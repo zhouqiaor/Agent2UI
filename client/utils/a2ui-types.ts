@@ -52,8 +52,10 @@ export interface Meeting {
   description: string;
   type: 'education' | 'meeting';
   status: 'ongoing' | 'upcoming' | 'completed';
+  time: string;
   startTime: string;
   endTime: string;
+  location: string;
   participants: number;
   organizer: string;
   imageUrl: string;

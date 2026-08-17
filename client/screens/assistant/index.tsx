@@ -15,7 +15,8 @@ import { Screen } from '@/components/Screen';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import SSE from 'react-native-sse';
 import { A2UIRenderer } from '@/components/a2ui/A2UIRenderer';
-import type { A2UIComponent, ChatMessage } from '@/utils/a2ui-types';
+import type { A2UIComponent } from '@/utils/a2ui-types';
+import { useResponsive } from '@/hooks/useResponsive';
 
 const EXPO_PUBLIC_BACKEND_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_BASE_URL;
 
@@ -129,7 +130,18 @@ export default function AssistantScreen() {
     { label: '创建投票', icon: 'chart-bar' as const, text: '创建一个投票' },
     { label: '生成议程', icon: 'list-check' as const, text: '生成一个会议议程' },
     { label: '任务列表', icon: 'clipboard-list' as const, text: '创建一个任务列表' },
+    { label: '会议纪要', icon: 'file-lines' as const, text: '帮我整理会议纪要' },
+    { label: '头脑风暴', icon: 'lightbulb' as const, text: '帮我头脑风暴一下' },
   ];
+
+  const suggestions = [
+    { icon: 'calendar-plus' as const, title: '安排会议', desc: '创建会议并生成议程' },
+    { icon: 'people-group' as const, title: '分组讨论', desc: '将参会者自动分组' },
+    { icon: 'chart-pie' as const, title: '数据可视化', desc: '生成图表展示结果' },
+    { icon: 'file-export' as const, title: '导出纪要', desc: '一键导出会议记录' },
+  ];
+
+  const { shouldUseTwoColumn } = useResponsive();
 
   return (
     <Screen safeAreaEdges={['left', 'right', 'bottom']}>
@@ -152,6 +164,138 @@ export default function AssistantScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={0}
       >
+        {shouldUseTwoColumn ? (
+          <View style={styles.twoColumnChat}>
+            {/* Left: suggestion panel */}
+            <View style={styles.aiSidebar}>
+              <Text style={styles.aiSidebarTitle}>常用功能</Text>
+              <View style={styles.suggestionGrid}>
+                {suggestions.map((s) => (
+                  <Pressable
+                    key={s.title}
+                    style={styles.suggestionCard}
+                    onPress={() => setInputText(s.desc)}
+                  >
+                    <View style={styles.suggestionIcon}>
+                      <FontAwesome6 name={s.icon} size={18} color="#4F46E5" />
+                    </View>
+                    <Text style={styles.suggestionTitle}>{s.title}</Text>
+                    <Text style={styles.suggestionDesc}>{s.desc}</Text>
+                  </Pressable>
+                ))}
+              </View>
+              <View style={styles.sidebarDivider} />
+              <Text style={styles.aiSidebarTitle}>快捷提示</Text>
+              <View style={styles.quickHints}>
+                {['"帮我创建项目评审投票"', '"总结本次会议要点"', '"分配待办任务给成员"'].map((hint, i) => (
+                  <Pressable
+                    key={i}
+                    style={styles.hintBtn}
+                    onPress={() => setInputText(hint.replace(/"/g, ''))}
+                  >
+                    <FontAwesome6 name="wand-magic-sparkles" size={12} color="#4F46E5" />
+                    <Text style={styles.hintText}>{hint}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+
+            {/* Right: chat area */}
+            <View style={styles.chatArea}>
+              <ScrollView
+                ref={scrollViewRef}
+                style={styles.flex}
+                contentContainerStyle={[styles.messagesContent, styles.tabletMsgContent]}
+                onContentSizeChange={() =>
+                  scrollViewRef.current?.scrollToEnd({ animated: true })
+                }
+              >
+                {messages.map((msg) => (
+                  <View
+                    key={msg.id}
+                    style={[
+                      styles.messageRow,
+                      msg.role === 'user' ? styles.userRow : styles.assistantRow,
+                    ]}
+                  >
+                    {msg.role === 'assistant' && (
+                      <View style={styles.aiAvatar}>
+                        <FontAwesome6 name="robot" size={14} color="#4F46E5" />
+                      </View>
+                    )}
+                    <View
+                      style={[
+                        styles.messageBubble,
+                        msg.role === 'user' ? styles.userBubble : styles.assistantBubble,
+                      ]}
+                    >
+                      {msg.text ? (
+                        <Text
+                          style={[
+                            styles.messageText,
+                            msg.role === 'user' ? styles.userText : styles.assistantText,
+                          ]}
+                        >
+                          {msg.text}
+                        </Text>
+                      ) : null}
+                      {msg.components.length > 0 && (
+                        <View style={styles.componentsContainer}>
+                          <A2UIRenderer components={msg.components} />
+                        </View>
+                      )}
+                    </View>
+                  </View>
+                ))}
+
+                {isStreaming && messages[messages.length - 1]?.text === '' && (
+                  <View style={[styles.messageRow, styles.assistantRow]}>
+                    <View style={styles.aiAvatar}>
+                      <FontAwesome6 name="robot" size={14} color="#4F46E5" />
+                    </View>
+                    <View style={styles.assistantBubble}>
+                      <ActivityIndicator size="small" color="#4F46E5" />
+                    </View>
+                  </View>
+                )}
+
+                <View style={{ height: 20 }} />
+              </ScrollView>
+
+              {/* Input Bar */}
+              <View style={[styles.inputBar, styles.tabletInputBar, { paddingBottom: insets.bottom + 12 }]}>
+                <View style={styles.inputContainer}>
+                  <TextInput
+                    style={styles.textInput}
+                    placeholder="输入消息..."
+                    placeholderTextColor="#94A3B8"
+                    value={inputText}
+                    onChangeText={setInputText}
+                    onSubmitEditing={sendMessage}
+                    returnKeyType="send"
+                    editable={!isStreaming}
+                    multiline
+                  />
+                  <Pressable
+                    style={[
+                      styles.sendBtn,
+                      (!inputText.trim() || isStreaming) && styles.sendBtnDisabled,
+                    ]}
+                    onPress={sendMessage}
+                    disabled={!inputText.trim() || isStreaming}
+                  >
+                    <FontAwesome6
+                      name="paper-plane"
+                      size={16}
+                      color={!inputText.trim() || isStreaming ? '#CBD5E1' : '#FFFFFF'}
+                    />
+                  </Pressable>
+                </View>
+              </View>
+            </View>
+          </View>
+        ) : (
+          <View style={{ flex: 1 }}>
         <ScrollView
           ref={scrollViewRef}
           style={styles.flex}
@@ -269,6 +413,8 @@ export default function AssistantScreen() {
             </Pressable>
           </View>
         </View>
+          </View>
+        )}
       </KeyboardAvoidingView>
     </Screen>
   );
@@ -426,5 +572,92 @@ const styles = StyleSheet.create({
   },
   sendBtnDisabled: {
     backgroundColor: '#E8E8EB',
+  },
+  // Tablet landscape two-column
+  twoColumnChat: {
+    flex: 1,
+    flexDirection: 'row',
+  },
+  aiSidebar: {
+    width: 280,
+    padding: 20,
+    paddingTop: 8,
+    borderRightWidth: StyleSheet.hairlineWidth,
+    borderRightColor: 'rgba(148,163,184,0.2)',
+    backgroundColor: 'rgba(79,70,229,0.02)',
+  },
+  aiSidebarTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#64748B',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 12,
+  },
+  suggestionGrid: {
+    gap: 10,
+  },
+  suggestionCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 14,
+    gap: 6,
+    ...Platform.select({
+      ios: { shadowColor: '#4F46E5', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6 },
+      android: { elevation: 1 },
+      web: { boxShadow: '0 2px 6px rgba(79,70,229,0.06)' },
+    }),
+  },
+  suggestionIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    backgroundColor: 'rgba(79,70,229,0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  suggestionTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1E293B',
+  },
+  suggestionDesc: {
+    fontSize: 12,
+    color: '#94A3B8',
+  },
+  sidebarDivider: {
+    height: 1,
+    backgroundColor: 'rgba(148,163,184,0.15)',
+    marginVertical: 20,
+  },
+  quickHints: {
+    gap: 8,
+  },
+  hintBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(79,70,229,0.06)',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 12,
+  },
+  hintText: {
+    flex: 1,
+    fontSize: 12,
+    color: '#4F46E5',
+    fontWeight: '500',
+  },
+  chatArea: {
+    flex: 1,
+  },
+  tabletMsgContent: {
+    paddingHorizontal: 28,
+    paddingTop: 20,
+    paddingBottom: 20,
+  },
+  tabletInputBar: {
+    paddingHorizontal: 28,
   },
 });

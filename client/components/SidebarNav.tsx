@@ -1,33 +1,51 @@
 /**
  * 平板侧边导航组件
  * 用于平板横屏时替代底部 Tab Bar
+ * 使用 usePathname 自动检测当前路由，无需传入 currentTab
  */
 import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useSafeRouter } from '@/hooks/useSafeRouter';
 import { useResponsive } from '@/hooks/useResponsive';
 import { FontAwesome6 } from '@expo/vector-icons';
+import { usePathname } from 'expo-router';
 import { useCSSVariable } from 'uniwind';
-
-interface SidebarNavProps {
-  currentTab: 'meetings' | 'assistant' | 'profile';
-}
 
 interface NavItem {
   key: 'meetings' | 'assistant' | 'profile';
   label: string;
   icon: keyof typeof FontAwesome6.glyphMap;
   route: string;
+  matchPaths: string[];
 }
 
 const navItems: NavItem[] = [
-  { key: 'meetings', label: '会议', icon: 'calendar', route: '/' },
-  { key: 'assistant', label: 'AI 助手', icon: 'robot', route: '/assistant' },
-  { key: 'profile', label: '我的', icon: 'user', route: '/profile' },
+  {
+    key: 'meetings',
+    label: '会议',
+    icon: 'calendar-days',
+    route: '/',
+    matchPaths: ['/', '/meeting-detail'],
+  },
+  {
+    key: 'assistant',
+    label: 'AI 助手',
+    icon: 'robot',
+    route: '/assistant',
+    matchPaths: ['/assistant'],
+  },
+  {
+    key: 'profile',
+    label: '我的',
+    icon: 'user',
+    route: '/profile',
+    matchPaths: ['/profile'],
+  },
 ];
 
-export default function SidebarNav({ currentTab }: SidebarNavProps) {
+export default function SidebarNav() {
   const router = useSafeRouter();
+  const pathname = usePathname();
   const { shouldUseSidebar } = useResponsive();
   const [accent, bg, text, muted] = useCSSVariable([
     '--color-accent',
@@ -38,12 +56,8 @@ export default function SidebarNav({ currentTab }: SidebarNavProps) {
 
   if (!shouldUseSidebar) return null;
 
-  const handleNavigate = (route: string) => {
-    if (route === '/') {
-      router.navigate('/');
-    } else {
-      router.navigate(route);
-    }
+  const isActive = (item: NavItem) => {
+    return item.matchPaths.some((p) => pathname === p || pathname.startsWith(p + '/'));
   };
 
   return (
@@ -51,33 +65,35 @@ export default function SidebarNav({ currentTab }: SidebarNavProps) {
       {/* Logo */}
       <View style={styles.logoContainer}>
         <View style={[styles.logo, { backgroundColor: accent + '15' }]}>
-          <FontAwesome6 name="bolt" size={20} color={accent} />
+          <FontAwesome6 name="bolt" size={22} color={accent} />
         </View>
-        <Text style={[styles.logoText, { color: text }]}>MF</Text>
       </View>
 
       {/* Navigation Items */}
       <View style={styles.navItems}>
         {navItems.map((item) => {
-          const isActive = currentTab === item.key;
+          const active = isActive(item);
           return (
             <Pressable
               key={item.key}
-              onPress={() => handleNavigate(item.route)}
+              onPress={() => router.navigate(item.route)}
               style={[
                 styles.navItem,
-                isActive && { backgroundColor: accent + '15' },
+                active && { backgroundColor: accent + '12' },
               ]}
             >
-              <FontAwesome6
-                name={item.icon}
-                size={20}
-                color={isActive ? accent : muted}
-              />
+              <View style={active ? [styles.activeIndicator, { backgroundColor: accent }] : null}>
+                <FontAwesome6
+                  name={item.icon}
+                  size={20}
+                  color={active ? accent : muted}
+                />
+              </View>
               <Text
                 style={[
                   styles.navLabel,
-                  { color: isActive ? accent : muted },
+                  { color: active ? accent : muted },
+                  active && { fontWeight: '700' },
                 ]}
               >
                 {item.label}
@@ -89,7 +105,8 @@ export default function SidebarNav({ currentTab }: SidebarNavProps) {
 
       {/* Bottom Info */}
       <View style={styles.bottomInfo}>
-        <Text style={[styles.version, { color: muted }]}>v1.0.0</Text>
+        <View style={[styles.versionDot, { backgroundColor: '#10B981' }]} />
+        <Text style={[styles.version, { color: muted }]}>在线</Text>
       </View>
     </View>
   );
@@ -97,50 +114,61 @@ export default function SidebarNav({ currentTab }: SidebarNavProps) {
 
 const styles = StyleSheet.create({
   container: {
-    width: 80,
-    height: '100%',
+    width: 84,
+    paddingVertical: 20,
+    paddingHorizontal: 8,
     borderRightWidth: 1,
-    paddingTop: 20,
-    paddingBottom: 20,
     alignItems: 'center',
+    justifyContent: 'space-between',
   },
   logoContainer: {
-    alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: 16,
   },
   logo: {
     width: 44,
     height: 44,
-    borderRadius: 12,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 8,
-  },
-  logoText: {
-    fontSize: 12,
-    fontWeight: '700',
   },
   navItems: {
     flex: 1,
-    justifyContent: 'center',
     gap: 8,
+    alignItems: 'center',
+    paddingTop: 12,
   },
   navItem: {
     width: 64,
-    height: 56,
-    borderRadius: 12,
+    paddingVertical: 12,
+    borderRadius: 14,
     alignItems: 'center',
-    justifyContent: 'center',
     gap: 4,
+  },
+  activeIndicator: {
+    position: 'absolute',
+    left: 0,
+    top: 8,
+    bottom: 8,
+    width: 3,
+    borderTopRightRadius: 3,
+    borderBottomRightRadius: 3,
   },
   navLabel: {
     fontSize: 11,
     fontWeight: '500',
   },
   bottomInfo: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 6,
+  },
+  versionDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
   version: {
-    fontSize: 10,
+    fontSize: 11,
+    fontWeight: '500',
   },
 });
