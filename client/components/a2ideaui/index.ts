@@ -11,6 +11,7 @@ export { QARenderer } from './QARenderer';
 export { TaskListRenderer } from './TaskListRenderer';
 export { SmartTips } from './SmartTips';
 export { CardEdit } from './CardEdit';
+export { FullscreenPresentation } from './FullscreenPresentation';
 
 // 教育场景组件
 export { QuizRenderer, KnowledgePointRenderer } from './education';
