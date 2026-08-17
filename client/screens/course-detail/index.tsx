@@ -67,11 +67,11 @@ interface A2UIComponent {
 
 // 教育场景智能提示
 const EDUCATION_TIPS = [
-  '📝 生成课堂测验',
-  '📚 标注重点知识点',
-  '📊 创建学习进度跟踪',
-  '❓ 生成课堂问答',
-  '✅ 布置课后作业',
+  { id: 'quiz', icon: 'clipboard-outline', label: '生成测验', prompt: '生成课堂测验' },
+  { id: 'knowledge', icon: 'book-outline', label: '标注知识点', prompt: '标注重点知识点' },
+  { id: 'progress', icon: 'trending-up-outline', label: '学习进度', prompt: '创建学习进度跟踪' },
+  { id: 'qa', icon: 'help-circle-outline', label: '课堂问答', prompt: '生成课堂问答' },
+  { id: 'homework', icon: 'checkmark-done-outline', label: '布置作业', prompt: '布置课后作业' },
 ];
 
 export default function CourseDetailScreen() {
@@ -278,8 +278,8 @@ export default function CourseDetailScreen() {
   }, []);
 
   // 智能提示点击
-  const handleSmartTipClick = useCallback((tip: string) => {
-    setInputMessage(tip);
+  const handleSmartTipClick = useCallback((tip: { id: string; icon: string; label: string; prompt: string }) => {
+    setInputMessage(tip.prompt);
   }, []);
 
   // 发送消息
@@ -337,13 +337,13 @@ export default function CourseDetailScreen() {
         case 'note':
           return <NoteRenderer key={index} content={item.content || ''} tags={item.tags || []} />;
         case 'qa':
-          return <QARenderer key={index} data={item} onAction={() => {}} />;
+          return <QARenderer key={index} items={item.items || []} onAsk={() => {}} />;
         case 'task_list':
-          return <TaskListRenderer key={index} data={item} onAction={() => {}} />;
+          return <TaskListRenderer key={index} items={item.items || []} onToggle={() => {}} />;
         case 'quiz':
-          return <QuizRenderer key={index} data={item} onAction={() => {}} />;
+          return <QuizRenderer key={index} question={item.question || ''} options={item.options || []} type={item.type || 'single'} onAnswer={() => {}} />;
         case 'knowledge_point':
-          return <KnowledgePointRenderer key={index} data={item} onAction={() => {}} />;
+          return <KnowledgePointRenderer key={index} points={item.points || []} />;
         default:
           return null;
       }
@@ -401,13 +401,15 @@ export default function CourseDetailScreen() {
             {infoComponents.map((card) => (
               <Card
                 key={card.id}
+                id={card.id}
+                type={card.type as any}
                 title={card.title || '课程卡片'}
-                isFavorited={favoritedCards.has(card.id)}
+                isFavorite={favoritedCards.has(card.id)}
                 isSelected={selectedCardId === card.id}
                 isCasting={castingCards.has(card.id)}
-                onToggleFavorite={() => handleToggleFavorite(card.id)}
-                onToggleSelect={() => handleToggleSelect(card.id)}
-                onToggleCast={() => handleToggleCast(card.id)}
+                onFavorite={() => handleToggleFavorite(card.id)}
+                onSelect={() => handleToggleSelect(card.id)}
+                onCast={() => handleToggleCast(card.id)}
                 onClose={() => handleCloseCard(card.id)}
               >
                 {renderCardContent(card)}
@@ -424,13 +426,15 @@ export default function CourseDetailScreen() {
             {interactionComponents.map((card) => (
               <Card
                 key={card.id}
+                id={card.id}
+                type={card.type as any}
                 title={card.title || '互动卡片'}
-                isFavorited={favoritedCards.has(card.id)}
+                isFavorite={favoritedCards.has(card.id)}
                 isSelected={selectedCardId === card.id}
                 isCasting={castingCards.has(card.id)}
-                onToggleFavorite={() => handleToggleFavorite(card.id)}
-                onToggleSelect={() => handleToggleSelect(card.id)}
-                onToggleCast={() => handleToggleCast(card.id)}
+                onFavorite={() => handleToggleFavorite(card.id)}
+                onSelect={() => handleToggleSelect(card.id)}
+                onCast={() => handleToggleCast(card.id)}
                 onClose={() => handleCloseCard(card.id)}
               >
                 {renderCardContent(card)}
@@ -448,13 +452,15 @@ export default function CourseDetailScreen() {
           {cards.map((card) => (
             <Card
               key={card.id}
+              id={card.id}
+              type={card.type as any}
               title={card.title || '课程卡片'}
-              isFavorited={favoritedCards.has(card.id)}
+              isFavorite={favoritedCards.has(card.id)}
               isSelected={selectedCardId === card.id}
               isCasting={castingCards.has(card.id)}
-              onToggleFavorite={() => handleToggleFavorite(card.id)}
-              onToggleSelect={() => handleToggleSelect(card.id)}
-              onToggleCast={() => handleToggleCast(card.id)}
+              onFavorite={() => handleToggleFavorite(card.id)}
+              onSelect={() => handleToggleSelect(card.id)}
+              onCast={() => handleToggleCast(card.id)}
               onClose={() => handleCloseCard(card.id)}
             >
               {renderCardContent(card)}
