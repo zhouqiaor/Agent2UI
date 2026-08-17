@@ -10,6 +10,7 @@ export { NoteRenderer } from './NoteRenderer';
 export { QARenderer } from './QARenderer';
 export { TaskListRenderer } from './TaskListRenderer';
 export { SmartTips } from './SmartTips';
+export { CardEdit } from './CardEdit';
 
 // 教育场景组件
 export { QuizRenderer, KnowledgePointRenderer } from './education';
