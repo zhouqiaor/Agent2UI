@@ -307,7 +307,8 @@ export function useThrottle<T>(value: T, interval: number): T {
  * 用于优化计算密集型操作
  */
 export function useMemoized<T>(factory: () => T, deps: any[]): T {
-  return useMemo(factory, deps);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  return useMemo(() => factory(), deps);
 }
 
 /**
