@@ -278,6 +278,21 @@ interface ThemeContextType {
 // 创建 Context
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
+// 应用主题到 CSS 变量（仅 Web 端）
+const applyThemeToCSS = (theme: ThemeConfig) => {
+  if (typeof document === 'undefined') return;
+  
+  const root = document.documentElement;
+  root.style.setProperty('--background', theme.colors.background);
+  root.style.setProperty('--surface', theme.colors.surface);
+  root.style.setProperty('--foreground', theme.colors.text);
+  root.style.setProperty('--accent', theme.colors.primary);
+  root.style.setProperty('--border', theme.colors.border);
+  root.style.setProperty('--success', theme.colors.success);
+  root.style.setProperty('--warning', theme.colors.warning);
+  root.style.setProperty('--danger', theme.colors.error);
+};
+
 // Provider 组件
 export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [themeType, setThemeType] = useState<ThemeType>('harmony');
@@ -288,7 +303,9 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       try {
         const savedTheme = await AsyncStorage.getItem('theme');
         if (savedTheme && themes[savedTheme as ThemeType]) {
-          setThemeType(savedTheme as ThemeType);
+          const type = savedTheme as ThemeType;
+          setThemeType(type);
+          applyThemeToCSS(themes[type]);
         }
       } catch (error) {
         console.error('Failed to load theme:', error);
@@ -302,6 +319,7 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     try {
       await AsyncStorage.setItem('theme', type);
       setThemeType(type);
+      applyThemeToCSS(themes[type]);
     } catch (error) {
       console.error('Failed to save theme:', error);
     }
