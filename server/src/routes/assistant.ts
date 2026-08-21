@@ -1,11 +1,11 @@
 import { Router } from 'express';
-import { createLLMClient } from 'coze-coding-dev-sdk';
+import { LLMClient } from 'coze-coding-dev-sdk';
 import type { A2UIComponent } from '../types.js';
 
 export const assistantRouter = Router();
 
 // 创建 LLM 客户端
-const llmClient = createLLMClient();
+const llmClient = new LLMClient();
 
 /**
  * AI 助手对话接口
