@@ -3,6 +3,8 @@ import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { Screen } from '@/components/Screen';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTheme } from '@/contexts/ThemeContext';
+import { ThemeSelector } from '@/components/ThemeSelector';
 
 const menuItems = [
   {
@@ -80,36 +82,40 @@ export default function ProfileScreen() {
               <Text style={styles.sectionTitle}>{section.section}</Text>
               <View style={styles.menuCard}>
                 {section.items.map((item, index) => (
-                  <Pressable
-                    key={item.label}
-                    style={[
-                      styles.menuItem,
-                      index < section.items.length - 1 && styles.menuItemBorder,
-                    ]}
-                  >
-                    <View style={styles.menuIconContainer}>
-                      <FontAwesome6 name={item.icon} size={16} color="#4F46E5" />
-                    </View>
-                    <Text style={styles.menuLabel}>{item.label}</Text>
-                    {item.badge && (
-                      <View
-                        style={[
-                          styles.badge,
-                          item.badge === 'NEW' && styles.badgeNew,
-                        ]}
-                      >
-                        <Text
+                  item.label === '主题外观' ? (
+                    <ThemeSelector key={item.label} />
+                  ) : (
+                    <Pressable
+                      key={item.label}
+                      style={[
+                        styles.menuItem,
+                        index < section.items.length - 1 && styles.menuItemBorder,
+                      ]}
+                    >
+                      <View style={styles.menuIconContainer}>
+                        <FontAwesome6 name={item.icon} size={16} color="#4F46E5" />
+                      </View>
+                      <Text style={styles.menuLabel}>{item.label}</Text>
+                      {item.badge && (
+                        <View
                           style={[
-                            styles.badgeText,
-                            item.badge === 'NEW' && styles.badgeTextNew,
+                            styles.badge,
+                            item.badge === 'NEW' && styles.badgeNew,
                           ]}
                         >
-                          {item.badge}
-                        </Text>
-                      </View>
-                    )}
-                    <FontAwesome6 name="chevron-right" size={12} color="#CBD5E1" />
-                  </Pressable>
+                          <Text
+                            style={[
+                              styles.badgeText,
+                              item.badge === 'NEW' && styles.badgeTextNew,
+                            ]}
+                          >
+                            {item.badge}
+                          </Text>
+                        </View>
+                      )}
+                      <FontAwesome6 name="chevron-right" size={12} color="#CBD5E1" />
+                    </Pressable>
+                  )
                 ))}
               </View>
             </View>
