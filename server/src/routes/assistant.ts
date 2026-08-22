@@ -5,7 +5,9 @@ import type { A2UIComponent } from '../types.js';
 export const assistantRouter = Router();
 
 // 创建 LLM 客户端
-const llmClient = new LLMClient();
+const llmClient = new LLMClient({
+  model: 'doubao-seed-2-1-turbo-260628',
+});
 
 /**
  * AI 助手对话接口
