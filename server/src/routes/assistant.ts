@@ -3,9 +3,9 @@ import type { A2UIComponent } from '../types.js';
 
 export const assistantRouter = Router();
 
-// 火山方舟 API 配置
-const VOLCANO_API_BASE = 'https://st8tp3ajl0df3n8b8l8qu.apigateway-cn-beijing.volceapi.com/v1';
-const VOLCANO_API_KEY = 'sk-ws-H.EHLPPMY.QJz8.MEYCIQCk200amtQ7U7w9eXryCE3aARf7q2M58Xd2gXJmQOke6QIhAMJ9mBKcqvUG_d-5ePJFrIQFB7NirlVnAs-SxdAyWKkU';
+// 阿里云百炼（DashScope）API 配置
+const DASHSCOPE_API_BASE = 'https://dashscope.aliyuncs.com/compatible-mode/v1';
+const DASHSCOPE_API_KEY = 'sk-ws-H.EHLPPMY.QJz8.MEYCIQCk200amtQ7U7w9eXryCE3aARf7q2M58Xd2gXJmQOke6QIhAMJ9mBKcqvUG_d-5ePJFrIQFB7NirlVnAs-SxdAyWKkU';
 const MODEL_ID = 'doubao-seed-2-1-turbo-260628';
 
 /**
@@ -52,12 +52,12 @@ assistantRouter.post('/chat', async (req, res) => {
 
 请用中文回复，保持专业、简洁、友好。`;
 
-    // 调用大模型（流式）- 使用火山方舟 API
-    const response = await fetch(`${VOLCANO_API_BASE}/chat/completions`, {
+    // 调用大模型（流式）- 使用阿里云百炼（DashScope）API
+    const response = await fetch(`${DASHSCOPE_API_BASE}/chat/completions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${VOLCANO_API_KEY}`,
+        'Authorization': `Bearer ${DASHSCOPE_API_KEY}`,
       },
       body: JSON.stringify({
         model: MODEL_ID,
