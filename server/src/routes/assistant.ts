@@ -1,13 +1,12 @@
 import { Router } from 'express';
-import { LLMClient } from 'coze-coding-dev-sdk';
 import type { A2UIComponent } from '../types.js';
 
 export const assistantRouter = Router();
 
-// 创建 LLM 客户端
-const llmClient = new LLMClient({
-  model: 'doubao-seed-2-1-turbo-260628',
-});
+// 火山方舟 API 配置
+const VOLCANO_API_BASE = 'https://st8tp3ajl0df3n8b8l8qu.apigateway-cn-beijing.volceapi.com/v1';
+const VOLCANO_API_KEY = 'sk-ws-H.EHLPPMY.QJz8.MEYCIQCk200amtQ7U7w9eXryCE3aARf7q2M58Xd2gXJmQOke6QIhAMJ9mBKcqvUG_d-5ePJFrIQFB7NirlVnAs-SxdAyWKkU';
+const MODEL_ID = 'doubao-seed-2-1-turbo-260628';
 
 /**
  * AI 助手对话接口
@@ -48,54 +47,93 @@ assistantRouter.post('/chat', async (req, res) => {
 
 请用中文回复，保持专业、简洁、友好。`;
 
-    // 调用大模型（流式）
-    const stream = await llmClient.createChatCompletion({
-      model: 'doubao-seed-2-0-pro-260215',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: context ? `${context}\n\n用户消息：${message}` : message },
-      ],
-      stream: true,
+    // 调用大模型（流式）- 使用火山方舟 API
+    const response = await fetch(`${VOLCANO_API_BASE}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${VOLCANO_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: MODEL_ID,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: context ? `${context}\n\n用户消息：${message}` : message },
+        ],
+        stream: true,
+      }),
     });
 
+    if (!response.ok) {
+      throw new Error(`API request failed: ${response.status}`);
+    }
+
+    const reader = response.body?.getReader();
+    if (!reader) {
+      throw new Error('Failed to get response reader');
+    }
+
+    const decoder = new TextDecoder();
     let fullResponse = '';
+    let buffer = '';
 
     // 流式处理响应
-    for await (const chunk of stream) {
-      const content = chunk.choices[0]?.delta?.content || '';
-      if (content) {
-        fullResponse += content;
-        
-        // 检查是否包含 A2UI 组件
-        const a2uiMatch = content.match(/```a2ui\n([\s\S]*?)\n```/);
-        if (a2uiMatch) {
-          try {
-            const componentData = JSON.parse(a2uiMatch[1]);
-            const component: A2UIComponent = {
-              id: `ai_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-              type: componentData.type,
-              data: componentData.data,
-              timestamp: Date.now(),
-            };
-            
-            // 发送组件前的文本
-            const textBefore = fullResponse.split('```a2ui')[0];
-            if (textBefore) {
-              res.write(`data: ${JSON.stringify({ type: 'text_chunk', data: textBefore })}\n\n`);
-            }
-            
-            // 发送组件
-            res.write(`data: ${JSON.stringify({ type: 'component', data: component })}\n\n`);
-            
-            // 重置 fullResponse
-            fullResponse = '';
-          } catch (e) {
-            // 解析失败，继续作为文本处理
-            res.write(`data: ${JSON.stringify({ type: 'text_chunk', data: content })}\n\n`);
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          const data = line.slice(6);
+          if (data === '[DONE]') {
+            break;
           }
-        } else {
-          // 发送文本块
-          res.write(`data: ${JSON.stringify({ type: 'text_chunk', data: content })}\n\n`);
+
+          try {
+            const parsed = JSON.parse(data);
+            const content = parsed.choices?.[0]?.delta?.content || '';
+            if (content) {
+              fullResponse += content;
+              
+              // 检查是否包含 A2UI 组件
+              const a2uiMatch = content.match(/```a2ui\n([\s\S]*?)\n```/);
+              if (a2uiMatch) {
+                try {
+                  const componentData = JSON.parse(a2uiMatch[1]);
+                  const component: A2UIComponent = {
+                    id: `ai_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                    type: componentData.type,
+                    data: componentData.data,
+                    timestamp: Date.now(),
+                  };
+                  
+                  // 发送组件前的文本
+                  const textBefore = fullResponse.split('```a2ui')[0];
+                  if (textBefore) {
+                    res.write(`data: ${JSON.stringify({ type: 'text_chunk', data: textBefore })}\n\n`);
+                  }
+                  
+                  // 发送组件
+                  res.write(`data: ${JSON.stringify({ type: 'component', data: component })}\n\n`);
+                  
+                  // 重置 fullResponse
+                  fullResponse = '';
+                } catch (e) {
+                  // 解析失败，继续作为文本处理
+                  res.write(`data: ${JSON.stringify({ type: 'text_chunk', data: content })}\n\n`);
+                }
+              } else {
+                // 发送文本块
+                res.write(`data: ${JSON.stringify({ type: 'text_chunk', data: content })}\n\n`);
+              }
+            }
+          } catch (e) {
+            // 解析失败，跳过
+          }
         }
       }
     }
