@@ -82,6 +82,30 @@ export default function AssistantScreen() {
 
     sse.addEventListener('message', (event) => {
       if (event.data === '[DONE]') {
+        // 解析文本中的 A2UI 组件
+        const a2uiRegex = /```a2ui\n([\s\S]*?)\n```/g;
+        const components: A2UIComponent[] = [];
+        let match;
+        while ((match = a2uiRegex.exec(accumulatedText)) !== null) {
+          try {
+            const component = JSON.parse(match[1]);
+            components.push(component);
+          } catch (e) {
+            console.warn('Failed to parse A2UI component:', e);
+          }
+        }
+        
+        // 移除文本中的代码块
+        const cleanText = accumulatedText.replace(a2uiRegex, '').trim();
+        
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === assistantId
+              ? { ...msg, text: cleanText, components }
+              : msg
+          )
+        );
+        
         setIsStreaming(false);
         sse.close();
         return;
