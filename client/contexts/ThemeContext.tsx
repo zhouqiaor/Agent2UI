@@ -55,54 +55,54 @@ export interface ThemeConfig {
   };
 }
 
-// 鸿蒙设计风格
+// 鸿蒙设计风格（完全遵守 HarmonyOS Design 规范）
 const harmonyTheme: ThemeConfig = {
   name: '鸿蒙设计',
   type: 'harmony',
   colors: {
-    primary: '#007DFF',        // 华为蓝
-    primaryLight: '#3D9BFF',
-    primaryDark: '#0066CC',
-    secondary: '#FF6B35',      // 活力橙
-    background: '#F5F5F5',     // 浅灰背景
-    surface: '#FFFFFF',        // 白色卡片
-    text: '#1A1A1A',           // 深色文字
-    textSecondary: '#666666',  // 次要文字
-    border: '#E0E0E0',         // 边框
-    success: '#00C853',        // 成功绿
-    warning: '#FFB300',        // 警告黄
-    error: '#FF3B30',          // 错误红
+    primary: '#0A1F44',          // 主色（深蓝）
+    primaryLight: '#1A3A5C',     // 浅色主色
+    primaryDark: '#050F22',      // 深色主色
+    secondary: '#007DFF',        // 强调色（华为蓝）
+    background: '#F5F7FA',       // 页面背景
+    surface: '#FFFFFF',          // 卡片背景
+    text: '#1A1A1A',             // 主要文字
+    textSecondary: '#666666',    // 次要文字
+    border: '#E5E7EB',           // 边框
+    success: '#00C853',          // 成功绿
+    warning: '#FF9800',          // 警告橙
+    error: '#F44336',            // 错误红
   },
   typography: {
-    fontFamily: 'HarmonyOS Sans',
+    fontFamily: 'HarmonyOS Sans, PingFang SC, Microsoft YaHei, sans-serif',
     fontSize: {
-      xs: 12,
-      sm: 14,
-      base: 16,
-      lg: 18,
-      xl: 20,
-      '2xl': 24,
-      '3xl': 30,
+      xs: 12,    // label-small
+      sm: 14,    // body-medium / label-large
+      base: 16,  // body-large
+      lg: 18,    // headline-small
+      xl: 20,    // headline-medium
+      '2xl': 24, // headline-large
+      '3xl': 32, // display-medium
     },
   },
   spacing: {
-    xs: 4,
-    sm: 8,
-    md: 16,
-    lg: 24,
-    xl: 32,
+    xs: 4,     // space-xs
+    sm: 8,     // space-sm
+    md: 16,    // space-lg
+    lg: 24,    // space-xxl
+    xl: 32,    // space-3xl
   },
   borderRadius: {
-    sm: 4,
-    md: 8,
-    lg: 12,
-    xl: 16,
-    full: 999,
+    sm: 4,     // radius-sm
+    md: 8,     // radius-md（按钮、输入框）
+    lg: 12,    // radius-lg（卡片）
+    xl: 16,    // radius-xl（模态框）
+    full: 9999, // radius-full（标签、头像）
   },
   shadows: {
-    sm: '0 1px 2px rgba(0,0,0,0.05)',
-    md: '0 4px 6px rgba(0,0,0,0.1)',
-    lg: '0 10px 15px rgba(0,0,0,0.1)',
+    sm: '0 1px 2px rgba(0,0,0,0.05)',   // shadow-sm
+    md: '0 2px 8px rgba(0,0,0,0.08)',   // shadow-md（卡片）
+    lg: '0 4px 16px rgba(0,0,0,0.12)',  // shadow-lg（按钮悬浮）
   },
 };
 
