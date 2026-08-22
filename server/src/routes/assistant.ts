@@ -6,7 +6,7 @@ export const assistantRouter = Router();
 // 阿里云百炼（DashScope）API 配置
 const DASHSCOPE_API_BASE = 'https://dashscope.aliyuncs.com/compatible-mode/v1';
 const DASHSCOPE_API_KEY = 'sk-ws-H.EHLPPMY.QJz8.MEYCIQCk200amtQ7U7w9eXryCE3aARf7q2M58Xd2gXJmQOke6QIhAMJ9mBKcqvUG_d-5ePJFrIQFB7NirlVnAs-SxdAyWKkU';
-const MODEL_ID = 'doubao-seed-2-1-turbo-260628';
+const MODEL_ID = 'glm-5.2';
 
 /**
  * AI 助手对话接口
